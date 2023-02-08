@@ -16,3 +16,6 @@ A step by step series of examples that tell you how to get a development env run
 2. Navigate to the project directory: ´cd Remote-Inspection-and-Exploration-using-Camera-Drones´
 3. Install the required dependencies: 
       * `pip install -r requirements´
+
+### License
+This project is licensed under the [MIT License](https://github.com/yourusername/Remote-Inspection-and-Exploration-using-Camera-Drones/blob/master/LICENSE)
