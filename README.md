@@ -12,10 +12,10 @@ What things you need to install the software and how to install them:
 ### Installing for testing and development purposes
 A step by step series of examples that tell you how to get a development env running:
 
-1. Clone the repository to your local machine: git clone ´https://github.com/yourusername/Remote-Inspection-and-Exploration-using-Camera-Drones.git´
+1. Clone the repository to your local machine: git clone ´https://github.com/sh1tters/Remote-Inspection-and-Exploration-using-Camera-Drones.git´
 2. Navigate to the project directory: ´cd Remote-Inspection-and-Exploration-using-Camera-Drones´
 3. Install the required dependencies: 
       * `pip install -r requirements´
 
 ### License
-This project is licensed under the [MIT License](https://github.com/yourusername/Remote-Inspection-and-Exploration-using-Camera-Drones/blob/master/LICENSE)
+This project is licensed under the [MIT License](https://github.com/sh1tters/Remote-Inspection-and-Exploration-using-Camera-Drones/blob/master/LICENSE)
