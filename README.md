@@ -18,4 +18,4 @@ A step by step series of examples that tell you how to get a development env run
       * `pip install -r requirements´
 
 ### License
-This project is licensed under the [MIT License](https://github.com/sh1tters/Remote-Inspection-and-Exploration-using-Camera-Drones/blob/master/LICENSE)
+This project is licensed under the [MIT License](https://github.com/Sh1tters/P2-Remote-inspection-and-exploration-using-camera-drone/blob/main/LICENSE)
