@@ -1,17 +1,50 @@
 #uvicorn main:app --reload
-from fastapi import FastAPI, Request, Cookie
+#pip install "python-jose[cryptography]"
+#pip install "passlib[bcrypt]"
+from datetime import datetime, timedelta
+from typing import Annotated
+from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt #jwt & pyjwt
+from passlib.context import CryptContext
+from pydantic import BaseModel
+
+SECRET_KEY = "DuJwTmBr35qLU7HHqg2AMG+jkmx92JZk" #https://cloud.google.com/network-connectivity/docs/vpn/how-to/generating-pre-shared-key
+
+sessions = {}
+fake_users_db = {
+    "admin": {
+        "username": "admin",
+        "hashed_password": "$2b$12$mE3KlrNxXcdb7Hn4g3Je2ulIcXwQj/vhLa8ez412aojaSJGf/5VIG", #123
+        "disabled": False,
+    }
+}
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: str | None = None
+    
+class User(BaseModel):
+    username: str
+    disabled: bool | None = None
+
+class UserInDB(User):
+    hashed_password: str
 
 
-import jwt #jwt & pyjwt
-import datetime
-
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+#pwd_context.hash("password")
 
 app = FastAPI()
 
 origins = [ # Which request the API will allow
     "http://localhost",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "http://192.168.1.142:3000"
 ]
 
 app.add_middleware(
@@ -21,50 +54,57 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-sessions = {} # Use MongoDB instead
-SECRET_KEY = "somethingsomethingxx" # use env instead
-
 @app.get("/")
-def root(request: Request):
-    
-    return { "sessions": request.cookies }
+def handle(request: Request = None):
+    return { "data": sessions }
 
-@app.post("/api/auth/login")
+@app.get("/api/auth/logout")
+def handle(request: Request = None):
+    pass #is_user_authorized
+
+@app.post("/api/auth/login", response_model=Token)
 async def handle(request: Request = None):
-    if request is None:
-        return { "error": "BAD" }
+        request = await request.json()
+        user = authenticate_user(request.get("username"), request.get("password"))
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
 
-    # Get JSON data from request body
-    data = await request.json()
-    username = data.get("username")
-    password = data.get("password")
+        # Generate new HS256 access token
+        access_token = generate_access_token(data={"sub": user.username})
+        
+        # Remove old HS256 access token if any
+        if user.username in sessions:
+            del sessions[user.username]
+        # Store new HS256 access token
+        sessions[user.username] = access_token
 
-    # Do some validation on the credentials.
-    if username == "" or password == "":
-        return {"error": "Invalid username or password"}
-    
-    # Generate new jwt token and store it
-    token = generate_jwt_token(username)
-    sessions[token] = username
+        return {"access_token": access_token, "token_type": "bearer"}
 
-    # return the token in the response
-    return {"token": token}
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
 
-def generate_jwt_token(username: str):
-    payload = {
-        'username': username
-    }
+def get_user(db, username: str):
+    if username in db:
+        user_dict = db[username]
+        return UserInDB(**user_dict)
 
-    # set the expiration time to 1 hour from now
-    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-
-    # encode the token using the HS256 algorithm and the secret key
-    token = jwt.encode({'exp': expiration, **payload}, SECRET_KEY, algorithm='HS256')
-
-    return token
-
-def is_user_authorized(token: str = None) -> bool:
-    if token is None | token is "undefined" | token not in sessions:
+def authenticate_user(username: str, password: str):
+    fake_db = fake_users_db
+    user = get_user(fake_db, username)
+    if not user:
         return False
-    return True
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
+
+def generate_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=30)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
+    return encoded_jwt
