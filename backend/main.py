@@ -1,76 +1,70 @@
 #uvicorn main:app --reload
-from fastapi import Cookie, FastAPI, HTTPException
-from apscheduler.schedulers.background import BackgroundScheduler #https://coderslegacy.com/python/apscheduler-tutorial-advanced-scheduler/
-from starlette.responses import Response #https://www.starlette.io/responses/
-import json
-from time import time
+from fastapi import FastAPI, Request, Cookie
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import jwt #jwt & pyjwt
+import datetime
+
 
 app = FastAPI()
-scheduler = BackgroundScheduler()
 
-sessions = {} # Stores all sessions created
-scheduler.start()
+origins = [ # Which request the API will allow
+    "http://localhost",
+    "http://localhost:3000"
+]
 
-@app.get("/") #/
-def read_root():
-    return {"Active sessions": sessions}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/auth") #/auth
-def authenticate(session_id: str = Cookie(None)):
-    # Is user authorized?
-    if session_id is None or session_id not in sessions:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+sessions = {} # Use MongoDB instead
+SECRET_KEY = "somethingsomethingxx" # use env instead
+
+@app.get("/")
+def root(request: Request):
     
-    sessions[session_id]['created_at'] = time()
-    response = Response(content=json.dumps({"message": "OK", "data": sessions[session_id]}).encode())
-    response.set_cookie(key="session_id", value=session_id, secure=True)
-    return response
+    return { "sessions": request.cookies }
 
-@app.post("/login") #/login
-def login(username: str = None, password: str = None, session_id: str = Cookie(None)):
-    if session_id is not None and session_id in sessions:
-        # User has already logged in before
-        sessions[session_id]['created_at'] = time()
-        response = Response(content=json.dumps({"message": "OK"}).encode())
-        response.set_cookie(key="session_id", value=session_id, secure=True)
-        return response
-    
-    # Username and password validation (default set to None for now)
-    if username is None or password is None:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    session_id, session = generate_session() # Generates a new session and stores inside sessions
-    session['username'] = username
-    response = Response(content=json.dumps({"message": "OK"}).encode())
-    response.set_cookie(key="session_id", value=session_id, secure=True)
+@app.post("/api/auth/login")
+async def handle(request: Request = None):
+    if request is None:
+        return { "error": "BAD" }
 
-    return response
+    # Get JSON data from request body
+    data = await request.json()
+    username = data.get("username")
+    password = data.get("password")
 
-@app.get("/logout")
-def logout(session_id: str = Cookie(None)):
-    # Is user authorized?
-    if session_id is None or session_id not in sessions:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    # Do some validation on the credentials.
+    if username == "" or password == "":
+        return {"error": "Invalid username or password"}
     
-    del sessions[session_id]
-    
-    response = Response(content=json.dumps({"message": "OK"}).encode())
-    return response
-   
-def generate_session():
-    session_id = str(len(sessions))
-    session = {
-        'session_id': session_id,
-        'username': None,
-        'created_at': time(),
+    # Generate new jwt token and store it
+    token = generate_jwt_token(username)
+    sessions[token] = username
+
+    # return the token in the response
+    return {"token": token}
+
+def generate_jwt_token(username: str):
+    payload = {
+        'username': username
     }
-    sessions[session_id] = session
-    return session_id, session
 
-@scheduler.scheduled_job('interval', seconds=5)
-def cleanup_sessions():
-    # Remove sessions that has been inactive for < 10 minutes
-    now = time()
-    for session_id, session in list(sessions.items()):
-        if now - session['created_at'] > 600:  # 10 minutes
-            del sessions[session_id]
+    # set the expiration time to 1 hour from now
+    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+
+    # encode the token using the HS256 algorithm and the secret key
+    token = jwt.encode({'exp': expiration, **payload}, SECRET_KEY, algorithm='HS256')
+
+    return token
+
+def is_user_authorized(token: str = None) -> bool:
+    if token is None | token is "undefined" | token not in sessions:
+        return False
+    return True
