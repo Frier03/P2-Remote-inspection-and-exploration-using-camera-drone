@@ -16,20 +16,19 @@ function handleLogin(){
     })
     .then(response => response.json())
     .then(data => {
-        if (data.error != undefined){
-            console.log(data.error)
+        
+        if(data['detail'] === 'Incorrect username or password'){
+            console.log(data['detail'])
             return
         }
-        // store the token in a cookie named "auth_token". It should also expire in 1 hour.
-        const now = new Date();
-        const time = now.getTime();
-        const expirationTime = time + 60 * 60 * 1000; // 1 hour from now
-        now.setTime(expirationTime);
-        document.cookie = `auth_token=${data.token};expires=${now.toUTCString()};path=/`;
-        
 
-        console.log(document.cookie)
-        console.log("Successfully logged in")
+        const access_token = data['access_token']
+        const token_type = data['token_type']
+
+        // Store access token in cookies
+        document.cookie = 'access_token={0}'.format(access_token)
+        console.log('Successfully logged in! Here is your token "' + access_token + '"')
+
     })
     .catch(error => {
         // handle any errors here
