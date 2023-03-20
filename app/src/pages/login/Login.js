@@ -1,3 +1,5 @@
+import Cookies from 'js-cookie'; //npm install js-cookie --save
+
 function handleLogin(){
     const username = document.getElementById("username").value
     const password = document.getElementById("password").value
@@ -23,12 +25,12 @@ function handleLogin(){
         }
 
         const access_token = data['access_token']
-        const token_type = data['token_type']
+        //const token_type = data['token_type']
 
-        // Store access token in cookies
-        document.cookie = 'access_token={0}'.format(access_token)
         console.log('Successfully logged in! Here is your token "' + access_token + '"')
-
+        console.log('Storing your token...')
+        document.cookie = 'access_token='+access_token
+        console.log('DONE. Normally i would redirect you now but i aint got that code yet boi')
     })
     .catch(error => {
         // handle any errors here
@@ -39,6 +41,7 @@ function handleLogin(){
 const Login = () => {
     return (
     <>
+    <h1>Login</h1>
     <label>Username </label>
     <input type="text" id="username"/>
     <label>Password </label>
