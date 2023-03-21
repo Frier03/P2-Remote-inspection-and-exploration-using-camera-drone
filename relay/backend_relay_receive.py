@@ -1,5 +1,6 @@
 import socket
 
+# Static IP
 backend_ip = '0.0.0.0'
 backend_port = 7023
 

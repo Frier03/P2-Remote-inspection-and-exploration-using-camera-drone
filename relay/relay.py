@@ -6,7 +6,7 @@ host_port = 11111
 tello_ip = '192.168.10.1'
 tello_port = 8889
 
-# Create UDP socket
+# Create UDP socket 
 relay_udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 relay_udp_socket.bind((host_ip, host_port))
