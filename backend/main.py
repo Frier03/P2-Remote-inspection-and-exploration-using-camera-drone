@@ -1,11 +1,10 @@
-#https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 #uvicorn main:app --reload
 #pip install "python-jose[cryptography]"
 #pip install "passlib[bcrypt]"
 from datetime import datetime, timedelta
-from fastapi import Depends, FastAPI, HTTPException, status, Request
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt #jwt & pyjwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -20,27 +19,21 @@ fake_users_db = { #TODO: Use MongoDB
     }
 }
 
+blacklisted_tokens = {} #NOTE: Better to store in-memory
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
-class TokenData(BaseModel):
-    username: str | None = None
-    
 class User(BaseModel):
     name: str
     password: str
 
-class UserInDB(User):
-    hashed_password: str
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-#pwd_context.hash("password")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
 bearer = HTTPBearer()
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 origins = [ # Which request the API will allow
     "http://localhost",
     "http://localhost:3000",
@@ -57,16 +50,14 @@ app.add_middleware(
 )
 
 @app.get("/")
-def handle(request: Request = None):
-    #NOTE: PERMANENT REDIRECT to "/login" if user not authorized
-    ...
+def handle():
+    return { "blacklisted tokens" : blacklisted_tokens }
 
 @app.get('/v1/auth/protected')
 def handle(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
 
     if credentials is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    
     if not is_user_authorized(credentials.credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
@@ -82,10 +73,16 @@ async def handle(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
 
     # Validate token
     if not is_user_authorized(credentials.credentials):
-        raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     
-    # Client-side deletes the token from the cookie.
+    # Create expiration date of 2 hours
+    expire = datetime.utcnow() + timedelta(minutes=1440)
+    expire = expire.timestamp()
+    
+    # Store token and expiration in blacklisted_tokens
+    blacklisted_tokens[credentials.credentials] = expire
+    
+    
     return { "message": "OK" }
         
 
@@ -97,17 +94,33 @@ async def handle(user: User):
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"}
             )
+            
+        # Encode user.name
+        encoded_name = jwt.encode({'sub': user.name}, SECRET_KEY, algorithm="HS256")
+        
+        # Remove everything that not the encoded user.name
+        encoded_name = encoded_name.split('.')[0]
+        
+        # Map the encoded user names to their corresponding keys in blacklisted tokens
+        header_to_token = {key.split(".")[0]: key for key in blacklisted_tokens}
+        
+        # Is user.name (encoded in HS256) present in the map?
+        if encoded_name in header_to_token:
+  
+            # Delete blacklisted token
+            del blacklisted_tokens[header_to_token[encoded_name]]
+            
         
         # Generate new HS256 access token
         token = generate_access_token(data={"sub": user.name})
         return {"access_token": token, "token_type": "bearer"}
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
 
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     # Placeholder for validating the password
     if len(plain_password) < 3:
         return False
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password, hashed_password) # True/False depends if both hashes passwords matches
 
 def authenticate_user(username: str, password: str):
     if username not in fake_users_db:
@@ -124,7 +137,7 @@ def is_user_authorized(access_token: str):
         # Decode username from payload
         username = payload.get('sub')
 
-        if username is None:
+        if username is None or access_token in blacklisted_tokens:
             return False
         return True
     except JWTError:
