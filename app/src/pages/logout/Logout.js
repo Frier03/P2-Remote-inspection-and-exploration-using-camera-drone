@@ -1,7 +1,9 @@
+import trimAccessToken from '../../helperFunctions'
 
 function handleLogout(){
     // retrieve the JWT token from the cookie
-    const access_token = document.cookie;
+    let token = document.cookie;
+    token = trimAccessToken(token)
  
     // send a POST request to backend
     fetch('http://127.0.0.1:8000/v1/auth/logout', {
@@ -11,7 +13,7 @@ function handleLogout(){
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            access_token: access_token
+            access_token: token
         })
     })
     .then(response => response.json())
