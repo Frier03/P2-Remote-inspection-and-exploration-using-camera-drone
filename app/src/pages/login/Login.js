@@ -1,4 +1,3 @@
-import Cookies from 'js-cookie'; //npm install js-cookie --save
 import trimAccessToken from '../../helperFunctions'
 
 function handleLogin(){
@@ -20,20 +19,10 @@ function handleLogin(){
             access_token: token
         })
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(res => Promise.all([res.status, res.json()]))
+    .then(([status, data]) => {
         // Make proper logic here
-        if(data['detail'] === 'Incorrect username or password'){
-            console.log(data['detail'])
-            return
-        } else if(data['detail'] === "/"){
-            console.log("User has already logged in before and has a valid access token")
-            return
-        }
         const access_token = data['access_token'];
-
-        console.log('Successfully logged in! Here is your token "' + access_token + '"');
-        console.log('Storing your token...');
         document.cookie = 'access_token='+access_token+";";
     })
     .catch(error => {
