@@ -3,7 +3,6 @@
 #pip install "python-jose[cryptography]"
 #pip install "passlib[bcrypt]"
 from datetime import datetime, timedelta
-from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -14,7 +13,7 @@ import time
 
 SECRET_KEY = "DuJwTmBr35qLU7HHqg2AMG+jkmx92JZk" #https://cloud.google.com/network-connectivity/docs/vpn/how-to/generating-pre-shared-key
 
-fake_users_db = {
+fake_users_db = { #TODO: Use MongoDB
     "admin": {
         "username": "admin",
         "hashed_password": "$2b$12$mE3KlrNxXcdb7Hn4g3Je2ulIcXwQj/vhLa8ez412aojaSJGf/5VIG", #123
@@ -43,8 +42,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
 
-sessions = {}
-
 origins = [ # Which request the API will allow
     "http://localhost",
     "http://localhost:3000",
@@ -57,31 +54,54 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
+
 @app.get("/")
 def handle(request: Request = None):
-    return { "data": sessions }
+    #NOTE: PERMANENT REDIRECT to "/login" if user not authorized
+    ...
 
-@app.post("/api/auth/logout")
+@app.get('/v1/auth/protected')
+def handle(request: Request = None):
+    ...
+
+@app.post('/v1/auth/register')
+def handle(request: Request = None):
+    #NOTE: PERMANENT REDIRECT to "/login" after user has signed up
+    ...
+
+@app.post("/v1/auth/logout")
 async def handle(request: Request = None):
     request = await request.json()
-    access_token = request.get("access_token").split("access_token=")[1]
+    token = request.get("access_token")
 
     # Validate token
-    if not is_user_authorized(access_token):
+    if not is_user_authorized(token):
         raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not Authorized.",
+                detail="Not Authorized",
                 headers={"WWW-Authenticate": "Bearer"}
         )
     
+    # Client-side deletes the token from the cookie.
     return { "message": "OK" }
         
 
-@app.post("/api/auth/login", response_model=Token)
+@app.post("/v1/auth/login", response_model=Token)
 async def handle(request: Request = None):
         request = await request.json()
+        token = request.get("access_token")
+        
+        # Is the user authorized? (is the token valid)
+        if is_user_authorized(token):
+            # Generate new token to user? Or update token with new datetime exp?
+            raise HTTPException(
+                status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+                detail="/",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
         user = authenticate_user(request.get("username"), request.get("password"))
         
         if not user:
