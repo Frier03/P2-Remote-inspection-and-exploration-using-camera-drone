@@ -1,0 +1,19 @@
+Pseudo-code flow for backend when it receives a post request on /api/auth/login
+
+[] a function call
+"" = jumps
+
+[/api/auth/login]
+
+".../api/auth/login"
+[backend authenticates user, IF FALSE]
+    [backend sends 401 (UNAUTHORIZED)]
+
+
+[ELSE]
+    [backend generates new HS256 token]
+    [backend checks for old tokens linked to user, IF TRUE]
+        [backend deletes that token from local storage]
+        [continue]
+    [stores new HS256 token in local storage]
+    [backend returns HS256 token + token type]
