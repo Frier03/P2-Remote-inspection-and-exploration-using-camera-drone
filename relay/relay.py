@@ -2,7 +2,7 @@
 import threading
 import socket
 import time
-#import cv2
+import cv2
 import keyboard
 
 HOST = ''
@@ -40,18 +40,32 @@ def recvideo():
     print("streamon")
     cmd_socket.sendto("streamon".encode(encoding="utf-8"), tello_address)
 
-    vidsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #New Socket to receive Video Data
-    vidsock.bind(('', 11111)) #Bind the socket to the listening port
+    time.sleep(2)
+    #vidsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #New Socket to receive Video Data
+    #vidsock.bind(('', 11111)) #Bind the socket to the listening port
 
-    #cap = cv2.VideoCapture('udp://@0.0.0.0:11111') #Create an OpenCV video Capture object
-
-    while True:
+    cap = cv2.VideoCapture('udp://@0.0.0.0:11111') #Create an OpenCV video Capture object
+    cap.set(cv2.CAP_PROP_FPS, 30)
+    while cap.isOpened():
         try:
-            vid, server = vidsock.recvfrom(2048) #Receive Video Data from the drone
-            cmd_socket.sendto(vid, backend_address) #Send the Data to the backend_address server
+            # Read a frame from the video stream
+            ret, frame = cap.read()
+
+            if not ret:
+                break #Check if the frame was read correctly
+
+            #Display the frame in a window
+            cv2.imshow('Tello EDU Stream', frame)
+
+            #Wait for a key press and check if the 'q' key was pressed
+            if cv2.waitKey(1) & 0xFF == ord('m'):
+                break
 
         except KeyboardInterrupt:
             break
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 #recvThread Createq
 recvThread = threading.Thread(target=recv, daemon=True)
@@ -61,8 +75,8 @@ recvThread.start()
 print("Enabling SDK Mode")
 cmd_socket.sendto("command".encode(encoding="utf-8"), tello_address)
 
-#videoThread = threading.Thread(target=recvideo, daemon=True)
-#videoThread.start()
+videoThread = threading.Thread(target=recvideo, daemon=True)
+videoThread.start()
 
 
 while True: 
@@ -109,9 +123,19 @@ while True:
             print("Land")
             time.sleep(0.8)
 
-        if keyboard.is_pressed("q"):
+        if keyboard.is_pressed("m"):
             sendmsg("emergency")
             print("Emergency")
+            time.sleep(0.8)
+
+        if keyboard.is_pressed("e"):
+            sendmsg("cw 20")
+            print("cw 20")
+            time.sleep(0.8)
+        
+        if keyboard.is_pressed("q"):
+            sendmsg("ccw 20")
+            print("ccw 20")
             time.sleep(0.8)
 
     except KeyboardInterrupt:
@@ -140,4 +164,14 @@ while True:
 
     #cap.release()
     #cv2.destroyAllWindows()
+
+
+        while True:
+        try:
+            vid, server = vidsock.recvfrom(2048) #Receive Video Data from the drone
+            cmd_socket.sendto(vid, backend_address) #Send the Data to the backend_address server
+
+        except KeyboardInterrupt:
+            break
+
     '''
