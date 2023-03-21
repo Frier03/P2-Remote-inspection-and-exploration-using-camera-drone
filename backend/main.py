@@ -68,9 +68,8 @@ async def handle(request: Request = None):
     request = await request.json()
     access_token = request.get("access_token").split("access_token=")[1]
 
-    user = is_user_authorized(access_token)
     # Validate token
-    if not user:
+    if not is_user_authorized(access_token):
         raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not Authorized.",
@@ -123,7 +122,7 @@ def is_user_authorized(access_token: str):
 
         if username is None:
             return False
-        else: return True
+        return True
     except JWTError:
         return False
 
