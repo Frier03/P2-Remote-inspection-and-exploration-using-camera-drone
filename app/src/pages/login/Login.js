@@ -22,6 +22,7 @@ function handleLogin(){
     .then(res => Promise.all([res.status, res.json()]))
     .then(([status, data]) => {
         // Make proper logic here
+        console.log(status, data)
         const access_token = data['access_token'];
         document.cookie = 'access_token='+access_token+";";
     })
