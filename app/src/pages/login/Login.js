@@ -1,11 +1,12 @@
 import Cookies from 'js-cookie'; //npm install js-cookie --save
 
 function handleLogin(){
-    const username = document.getElementById("username").value
-    const password = document.getElementById("password").value
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const token = document.cookie;
 
     // send a POST request to backend
-    fetch('http://127.0.0.1:8000/api/auth/login', {
+    fetch('http://127.0.0.1:8000/v1/auth/login', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -13,24 +14,21 @@ function handleLogin(){
         },
         body: JSON.stringify({
             username: username, 
-            password: password
+            password: password,
+            access_token: token
         })
     })
     .then(response => response.json())
     .then(data => {
-        
         if(data['detail'] === 'Incorrect username or password'){
             console.log(data['detail'])
             return
         }
+        const access_token = data['access_token'];
 
-        const access_token = data['access_token']
-        //const token_type = data['token_type']
-
-        console.log('Successfully logged in! Here is your token "' + access_token + '"')
-        console.log('Storing your token...')
-        document.cookie = 'access_token='+access_token
-        console.log('DONE. Normally i would redirect you now but i aint got that code yet boi')
+        console.log('Successfully logged in! Here is your token "' + access_token + '"');
+        console.log('Storing your token...');
+        document.cookie = 'access_token='+access_token;
     })
     .catch(error => {
         // handle any errors here
