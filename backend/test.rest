@@ -1,0 +1,19 @@
+# Download CLIENT Rest from VS code to use this file
+
+POST http://localhost:8000/v1/auth/login
+Content-Type: application/json
+
+{
+    "name": "admin",
+    "password": "123"
+}
+
+###
+
+GET http://localhost:8000/v1/auth/protected
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY3OTQwODQ1Nn0.28ICjpMqgxUcIOO0XQ8jIjkMJRpSiug4S_7aQ5fiJFk
+
+###
+
+POST http://localhost:8000/v1/auth/logout
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4dcCI6MTY3OTQwODQ1Nn0.28ICjpMqgxUcIOO0XQ8jIjkMJRpSiug4S_7aQ5fiJFk
