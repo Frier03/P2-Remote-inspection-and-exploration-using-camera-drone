@@ -8,27 +8,27 @@ import keyboard
 HOST = ''
 PORT = 9000
 TELLOPORT = 8889
-localaddress = (HOST, PORT)
-telloaddress = ('192.168.10.1', 8889)
-backendaddress = ('89.150.129.29', 6969)
+local_address = (HOST, PORT)
+tello_address = ('192.168.10.1', 8889)
+backend_address = ('89.150.129.29', 6969)
 ENCODING = 'utf-8'
 
 altitude = 20
 
 #Create UDP Socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP Connection using IPV4
+cmd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP Connection using IPV4
 
-sock.bind(localaddress)
+cmd_socket.bind(local_address)
 
 def sendmsg(msg):
     msg = msg.encode(encoding="utf-8")
-    sent = sock.sendto(msg, telloaddress)
+    sent = cmd_socket.sendto(msg, tello_address)
 
 
 def recv():
     while True:
         try:
-            data, server = sock.recvfrom(2048)
+            data, server = cmd_socket.recvfrom(2048)
             print(f"{data.decode(encoding=ENCODING)} from {server}")
         except Exception:
             print('\nExit . . .\n')
@@ -38,7 +38,7 @@ def recv():
 def recvideo():
     #Tell the Tello to enable video stream
     print("streamon")
-    sock.sendto("streamon".encode(encoding="utf-8"), telloaddress)
+    cmd_socket.sendto("streamon".encode(encoding="utf-8"), tello_address)
 
     vidsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #New Socket to receive Video Data
     vidsock.bind(('', 11111)) #Bind the socket to the listening port
@@ -48,7 +48,7 @@ def recvideo():
     while True:
         try:
             vid, server = vidsock.recvfrom(2048) #Receive Video Data from the drone
-            sock.sendto(vid, backend) #Send the Data to the backend server
+            cmd_socket.sendto(vid, backend_address) #Send the Data to the backend_address server
 
         except KeyboardInterrupt:
             break
@@ -59,7 +59,7 @@ recvThread.start()
 
 #Enable Video Stream and Start Receiving
 print("Enabling SDK Mode")
-sock.sendto("command".encode(encoding="utf-8"), telloaddress)
+cmd_socket.sendto("command".encode(encoding="utf-8"), tello_address)
 
 #videoThread = threading.Thread(target=recvideo, daemon=True)
 #videoThread.start()
@@ -116,7 +116,7 @@ while True:
 
     except KeyboardInterrupt:
         print ('\n . . .\n')
-        sock.close()
+        cmd_socket.close()
         break
 
     '''
