@@ -10,6 +10,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt #jwt & pyjwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
+import time
 
 SECRET_KEY = "DuJwTmBr35qLU7HHqg2AMG+jkmx92JZk" #https://cloud.google.com/network-connectivity/docs/vpn/how-to/generating-pre-shared-key
 
@@ -47,7 +48,8 @@ sessions = {}
 origins = [ # Which request the API will allow
     "http://localhost",
     "http://localhost:3000",
-    "http://192.168.1.142:3000"
+    "http://192.168.1.142:3000",
+    "http://172.26.50.10:3000"
 ]
 
 app.add_middleware(
@@ -65,21 +67,15 @@ def handle(request: Request = None):
 async def handle(request: Request = None):
     request = await request.json()
     access_token = request.get("access_token").split("access_token=")[1]
-    
-    # Decode access token
-    decoded_token = decode_access_token(access_token)
-    # Decode username from token
-    username = decoded_token.get('sub')
-    
-    # Validate token by username
-    if not is_user_authorized(username, access_token):
+
+    user = is_user_authorized(access_token)
+    # Validate token
+    if not user:
         raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not Authorized.",
                 headers={"WWW-Authenticate": "Bearer"}
         )
-    
-    del sessions[username] #NOTE: Use the expiration date from the jwt token instead of using in-memory :)
     
     return { "message": "OK" }
         
@@ -97,15 +93,8 @@ async def handle(request: Request = None):
             )
 
         # Generate new HS256 access token
-        access_token = generate_access_token(data={"sub": user.username})
-        
-        # Remove old HS256 access token if any
-        if user.username in sessions:
-            del sessions[user.username]
-        # Store new HS256 access token
-        sessions[user.username] = access_token
-
-        return {"access_token": access_token, "token_type": "bearer"}
+        token = generate_access_token(data={"sub": user.username})
+        return {"access_token": token, "token_type": "bearer"}
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -124,13 +113,18 @@ def authenticate_user(username: str, password: str):
         return False
     return user
 
-def is_user_authorized(username: str, access_token: str):
+def is_user_authorized(access_token: str):
     try:
-        # Validate access token
-        if sessions[username] == access_token:
-            return True
-        return False
-    except KeyError:
+        # Decode access token
+        payload = decode_access_token(access_token)
+
+        # Decode username from payload
+        username = payload.get('sub')
+
+        if username is None:
+            return False
+        else: return True
+    except JWTError:
         return False
 
 def generate_access_token(data: dict):
