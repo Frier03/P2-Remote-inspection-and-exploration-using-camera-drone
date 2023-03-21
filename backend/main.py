@@ -5,7 +5,7 @@
 from datetime import datetime, timedelta
 from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt #jwt & pyjwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -15,9 +15,8 @@ SECRET_KEY = "DuJwTmBr35qLU7HHqg2AMG+jkmx92JZk" #https://cloud.google.com/networ
 
 fake_users_db = { #TODO: Use MongoDB
     "admin": {
-        "username": "admin",
-        "hashed_password": "$2b$12$mE3KlrNxXcdb7Hn4g3Je2ulIcXwQj/vhLa8ez412aojaSJGf/5VIG", #123
-        "disabled": False,
+        "name": "admin",
+        "hashed_password": "$2b$12$mE3KlrNxXcdb7Hn4g3Je2ulIcXwQj/vhLa8ez412aojaSJGf/5VIG" #123
     }
 }
 
@@ -29,18 +28,18 @@ class TokenData(BaseModel):
     username: str | None = None
     
 class User(BaseModel):
-    username: str
-    disabled: bool | None = None
+    name: str
+    password: str
 
 class UserInDB(User):
     hashed_password: str
-
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 #pwd_context.hash("password")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
+bearer = HTTPBearer()
 
 origins = [ # Which request the API will allow
     "http://localhost",
@@ -63,74 +62,59 @@ def handle(request: Request = None):
     ...
 
 @app.get('/v1/auth/protected')
-def handle(request: Request = None):
-    ...
+def handle(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
+
+    if credentials is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    
+    if not is_user_authorized(credentials.credentials):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    return { "message": "OK" }
 
 @app.post('/v1/auth/register')
-def handle(request: Request = None):
+def handle(user: User):
     #NOTE: PERMANENT REDIRECT to "/login" after user has signed up
     ...
 
 @app.post("/v1/auth/logout")
-async def handle(request: Request = None):
-    request = await request.json()
-    token = request.get("access_token")
+async def handle(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
 
     # Validate token
-    if not is_user_authorized(token):
+    if not is_user_authorized(credentials.credentials):
         raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not Authorized",
-                headers={"WWW-Authenticate": "Bearer"}
-        )
+                status_code=status.HTTP_401_UNAUTHORIZED)
     
     # Client-side deletes the token from the cookie.
     return { "message": "OK" }
         
 
-@app.post("/v1/auth/login", response_model=Token)
-async def handle(request: Request = None):
-        request = await request.json()
-        token = request.get("access_token")
-        
-        # Is the user authorized? (is the token valid)
-        if is_user_authorized(token):
-            # Generate new token to user? Or update token with new datetime exp?
-            raise HTTPException(
-                status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-                detail="/",
-                headers={"WWW-Authenticate": "Bearer"}
-            )
-
-        user = authenticate_user(request.get("username"), request.get("password"))
-        
-        if not user:
+@app.post("/v1/auth/login")
+async def handle(user: User):        
+        if not authenticate_user(user.name, user.password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"}
             )
-
+        
         # Generate new HS256 access token
-        token = generate_access_token(data={"sub": user.username})
+        token = generate_access_token(data={"sub": user.name})
         return {"access_token": token, "token_type": "bearer"}
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+
+    # Placeholder for validating the password
+    if len(plain_password) < 3:
+        return False
     return pwd_context.verify(plain_password, hashed_password)
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
-
 def authenticate_user(username: str, password: str):
-    fake_db = fake_users_db
-    user = get_user(fake_db, username)
-    if not user:
+    if username not in fake_users_db:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, fake_users_db[username]['hashed_password']):
         return False
-    return user
+    return True
 
 def is_user_authorized(access_token: str):
     try:
@@ -145,6 +129,8 @@ def is_user_authorized(access_token: str):
         return True
     except JWTError:
         return False
+    except AttributeError:
+        return False
 
 def generate_access_token(data: dict):
     to_encode = data.copy()
@@ -155,3 +141,8 @@ def generate_access_token(data: dict):
 
 def decode_access_token(encoded_jwt: str):
     return jwt.decode(encoded_jwt, SECRET_KEY, algorithms=["HS256"])
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
