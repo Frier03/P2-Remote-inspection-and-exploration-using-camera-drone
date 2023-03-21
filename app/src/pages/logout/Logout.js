@@ -4,6 +4,7 @@ function handleLogout(){
     // retrieve the JWT token from the cookie
     let token = document.cookie;
     token = trimAccessToken(token)
+    console.log(document.cookie)
  
     // send a POST request to backend
     fetch('http://127.0.0.1:8000/v1/auth/logout', {
@@ -18,7 +19,10 @@ function handleLogout(){
     })
     .then(response => response.json())
     .then(data => {
-        console.log(data);
+        if(data['message'] == "OK"){
+            // delete cookie
+            document.cookie = "access_token="
+        }
     })
     .catch(error => {
         // handle any errors here
