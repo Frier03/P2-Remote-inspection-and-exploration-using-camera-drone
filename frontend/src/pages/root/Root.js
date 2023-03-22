@@ -7,8 +7,6 @@ function RootForm({ authorizationStatus }) {
         <h1>Authorized</h1>
       </>
     );
-  } else {
-    return null;
   }
 }
 
