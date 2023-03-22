@@ -1,7 +1,7 @@
 import React from 'react';
 import Cookies from 'js-cookie';
 
-function LogoutForm( {token} ) {
+function LogoutForm() {
 
   function handleLogout(event) {
     event.preventDefault();
