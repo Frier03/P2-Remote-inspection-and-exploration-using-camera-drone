@@ -63,11 +63,6 @@ def handle(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
 
     return { "message": "OK" }
 
-@app.post('/v1/auth/register')
-def handle(user: User):
-    #NOTE: PERMANENT REDIRECT to "/login" after user has signed up
-    ...
-
 @app.post("/v1/auth/logout")
 async def handle(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
 
