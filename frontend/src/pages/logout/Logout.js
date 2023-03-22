@@ -1,7 +1,16 @@
 import React from 'react';
 import Cookies from 'js-cookie';
+import withAuthorization from "../../HOC";
 
-function LogoutForm() {
+function LogoutForm({ authorizationStatus }) {
+  if (authorizationStatus === "Authorized") {
+    return (
+      <form onSubmit={handleLogout}>
+        <h1>Authorized</h1>
+        <button type="submit">Logout</button>
+      </form>
+    );
+  }
 
   function handleLogout(event) {
     event.preventDefault();
@@ -18,24 +27,28 @@ function LogoutForm() {
     .then(data => {
         if(data.message === "OK"){
             //Cookies.set('access_token', 'NULL') # Since backend adds token to a blacklist, we do not need this
+
+            window.location.href = "/login" // redirect to "/login"
         }
     })
     .catch(error => {
         if (error.message === 'Failed to fetch') {
-            alert('API is offline')
+            alert('Failed to fetch API')
         } else {
             alert('An error occured')
         }
     })
   }
+}
 
+const AuthorizedLogoutForm = withAuthorization(LogoutForm, "/login");
+
+function RenderAuthorizedContent() {
   return (
-    <form onSubmit={handleLogout}>
-      <label>
-        Logout
-        <button type="submit">Logout</button>
-      </label>
-    </form>
+    <>
+      <AuthorizedLogoutForm />
+    </>
   );
 }
-export default LogoutForm;
+
+export default RenderAuthorizedContent;
