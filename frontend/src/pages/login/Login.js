@@ -41,7 +41,7 @@ function LoginForm() {
   }
   if (token) {
     // Redirect to the protected route
-    window.location = '/'
+    window.location.href = '/'
     
   }
 
