@@ -17,7 +17,6 @@ altitude = 20
 
 #Create UDP Socket
 cmd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP Connection using IPV4
-
 cmd_socket.bind(local_address)
 
 def sendmsg(msg):
@@ -45,7 +44,8 @@ def recvideo():
     #vidsock.bind(('', 11111)) #Bind the socket to the listening port
 
     cap = cv2.VideoCapture('udp://@0.0.0.0:11111') #Create an OpenCV video Capture object
-    cap.set(cv2.CAP_PROP_FPS, 30)
+    #cap.set(cv2.CAP_PROP_FPS, 30)
+    
     while cap.isOpened():
         try:
             # Read a frame from the video stream
@@ -58,8 +58,12 @@ def recvideo():
             cv2.imshow('Tello EDU Stream', frame)
 
             #Wait for a key press and check if the 'q' key was pressed
-            if cv2.waitKey(1) & 0xFF == ord('m'):
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('m'):
                 break
+
+            elif key == ord('w'):
+                continue
 
         except KeyboardInterrupt:
             break
@@ -78,7 +82,7 @@ cmd_socket.sendto("command".encode(encoding="utf-8"), tello_address)
 videoThread = threading.Thread(target=recvideo, daemon=True)
 videoThread.start()
 
-
+'''
 while True: 
     try:
         if keyboard.is_pressed("a"):
@@ -143,7 +147,7 @@ while True:
         cmd_socket.close()
         break
 
-    '''
+        
         #cap = cv2.VideoCapture('udp://@0.0.0.0:11111') #Create an OpenCV video Capture object
 
     while True:
