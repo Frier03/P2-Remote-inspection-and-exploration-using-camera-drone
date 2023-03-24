@@ -3,6 +3,7 @@ from threading import Thread
 
 class relay_box():
     def __init__(self):
+        1+1
         
 
 ENCODING = 'utf-8'
@@ -82,7 +83,6 @@ def process_client_commands(backend_server_ip, backend_server_tcp_port):
             tello_udp_socket.sendto(bytes(command, ENCODING), tello_addr)
 
             command = None
-
 
 
 # run ---------------------------------------
