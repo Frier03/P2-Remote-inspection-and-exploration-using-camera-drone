@@ -11,9 +11,13 @@ Content-Type: application/json
 ###
 
 GET http://localhost:8000/v1/auth/protected
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY3OTQwODQ1Nn0.28ICjpMqgxUcIOO0XQ8jIjkMJRpSiug4S_7aQ5fiJFk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY3OTc0OTQ2N30.2NOHUbukM_F3MxztE2TCgQJF5Q2ZEs0l4GY-He2IdAzo
+
+###
+
+GET http://localhost:8000/
 
 ###
 
 POST http://localhost:8000/v1/auth/logout
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4dcCI6MTY3OTQwODQ1Nn0.28ICjpMqgxUcIOO0XQ8jIjkMJRpSiug4S_7aQ5fiJFk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY3OTY1MTkxM30.fMYzqjXfoRym4Br9papkJyTSBGHuwFeX6wDh5Xp3-g8
