@@ -10,7 +10,7 @@ host_ip = ''
 host_port = 11111
 
 # Tello stationmode ip, !!! on specific network !!!
-tello_ip = '192.168.137.112'
+tello_ip = '192.168.137.1'
 tello_port = 8889
 
 # Create UDP socket.
