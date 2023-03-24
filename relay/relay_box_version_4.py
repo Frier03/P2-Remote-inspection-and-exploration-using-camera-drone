@@ -29,6 +29,7 @@ class relay_box():
         self.session_port_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.session_port_socket.connect((self.backend_server_ip, self.backend_server_session_port))
                 
+        self.session_ports = relay_box.get_session_ports()
 
     def process_drone_feed(self):
 
@@ -81,19 +82,12 @@ class relay_box():
 
     
     def start_tcp_command_thread(self):
-        tcp_command_thread = Thread(target=relay_box.process_client_commands, args=(self.backend_server_ip, session_ports[0]), daemon=True)
+        tcp_command_thread = Thread(target=relay_box.process_client_commands, args=(self.backend_server_ip, self.session_ports[0]), daemon=True)
         tcp_command_thread.start()
 
 
     def start_video_feed_thread(self):
-        video_feed_thread = Thread(target=relay_box.process_drone_feed, args=(self.tello_addr, self.backend_server_ip, session_ports[1]), daemon=True)
+        video_feed_thread = Thread(target=relay_box.process_drone_feed, args=(self.tello_addr, self.backend_server_ip, self.session_ports[1]), daemon=True)
         video_feed_thread.start()
 
-# run ---------------------------------------
-
-session_ports = get_session_ports()
-
-
-
-
-
+    
