@@ -7,6 +7,8 @@ class threaded_TCP_server:
         self.local_host = '' #LocalHost Depending on which device runs the server
         print(f'Server Addres: {socket.gethostbyname(socket.gethostname())}')
 
+        self.tcp_connections = []
+
         self.local_tcp_addr = (self.local_host, tcpPort) #TCP Address
         self.local_udp_addr = (self.local_host, udpPort) #UDP Address
 
@@ -17,34 +19,42 @@ class threaded_TCP_server:
         self.udp_sock.bind(self.local_udp_addr) #Bind the udp socket to the UDP Address
 
         #Run threads for each connection
-        tcp_Thread = threading.Thread(target=self.tcp_client, args=(self.tcp_sock))
+        tcp_Thread = threading.Thread(target=self.tcp, args=(self.tcp_sock)) #The client function is also the one to accept both connections
         tcp_Thread.start()
 
-        udp_Thread = threading.Thread(target=self.udp, args=(self.udp_sock))
+        udp_Thread = threading.Thread(target=self.udp, args=(self.udp_sock)) 
         udp_Thread.start()
 
 
-    def tcp_client(self, socket):
+    def tcp(self, socket):
         relay = False #Check if the relay box has connected.
         socket.listen(2) #Await connection from client and from relaybox
 
         while True:
             conn, addr = socket.accept() #Accept Connections from relay and client
+            self.tcp_connections.append(conn)
 
             while relay == True: #Only start to handle client if relaybox has connected (Relay box will connect before client)
-                pass #Handle client
+                #Retreive the data from the client
+                try:
+                    data, addr = conn.recv(128) #Receive data from client
+                except Exception as e:
+                    print(f"Could not retreive commands: {e}")
 
+                try:
+                    self.tcp_connections[0].send(data)
+                except Exception as e:
+                    print(f"Could not send data to relaybox: {e}")
 
-            if relay == False: #Check if the relaybox has connected
-                tcp_client_thread = threading.Thread(target=self.tcp_relay, args=(conn, addr))
-                tcp_client_thread.start()
+            if relay == False: #Check flag: Has the relay box connected first?
                 relay = True
-        
-    
-    def tcp_relay(self, conn, addr):
 
     def udp(self, socket):
-        pass
+        while True:
+            try:
+                socket.recvfrom(2048)
+            except Exception as e:
+                print(f"Could not retreive Video stream: {e}")
        
 
     def server_loop(self):

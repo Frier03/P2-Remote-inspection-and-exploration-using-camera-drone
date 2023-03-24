@@ -47,14 +47,13 @@ def handshake(Conn, Addr, Connectport):
     time.sleep(1) #Give the Server Time to start
 
     try:
-        ListenSocket.sendall(f'{tcpPort}, {udpPort}'.encode(ENCODING))
+        Conn.sendall(f'{tcpPort}, {udpPort}'.encode(ENCODING))
     except Exception as e:
         print(f'Message Could not be sent: {e}')
 
 
-
 def ServerInstance(tcpPort, udpPort):
-    server = threaded_TCP_server(tcpPort, udpPort)
+    server = threaded_TCP_server(tcpPort, udpPort) #Create the server instance for the handled relaybox
 
 
 print('Listening for Incoming Connections')
