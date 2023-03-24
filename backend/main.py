@@ -2,15 +2,22 @@
 #pip install "python-jose[cryptography]"
 #pip install "passlib[bcrypt]"
 from datetime import datetime, timedelta
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt #jwt & pyjwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 import time
 
-SECRET_KEY = "DuJwTmBr35qLU7HHqg2AMG+jkmx92JZk" #https://cloud.google.com/network-connectivity/docs/vpn/how-to/generating-pre-shared-key
+from starlette.exceptions import HTTPException as starletteHTTPException
+from starlette.responses import HTMLResponse as starletteHTMLResponse 
+
+from os import getenv
+
+SECRET_KEY = getenv('SECRET_KEY')
+
+# // FILES
+from frontend_origins import add_origins
 
 fake_users_db = { #TODO: Use MongoDB
     "admin": {
@@ -20,6 +27,10 @@ fake_users_db = { #TODO: Use MongoDB
 }
 
 blacklisted_tokens = {} #NOTE: Better to store in-memory
+
+routes_with_middleware = [
+    "/v1/auth/protected"
+]
 
 class Token(BaseModel):
     access_token: str
@@ -32,40 +43,67 @@ class User(BaseModel):
 
 app = FastAPI()
 bearer = HTTPBearer()
-
+app = add_origins(app)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-origins = [ # Which request the API will allow
-    "http://localhost",
-    "http://localhost:3000",
-    "http://192.168.1.142:3000",
-    "http://172.26.50.10:3000"
-]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+@app.middleware("http")
+async def authorization(request: Request, call_next):
+    if request.url.path not in routes_with_middleware:
+        return await call_next(request) # Routes with no authentication
+    
+    # Get access token from headers
+    access_token = request.headers.get('authorization')
 
-@app.get("/")
+    # If no access_token declared, raise 401
+    if access_token is None:
+        return starletteHTMLResponse(status_code=401)
+    
+    # Try split "Bearer" from access_token
+    try:
+        access_token = access_token.split("Bearer ")[1]
+    except (ValueError, IndexError): # If token is not formatted correctly
+        return starletteHTMLResponse(status_code=400)
+    
+    # Is token blacklisted?
+    if access_token in blacklisted_tokens.values():
+        return starletteHTMLResponse(status_code=401)
+    
+    # Is user not authorized with this access token
+    if not is_user_authorized(access_token):
+        return starletteHTMLResponse(status_code=401)
+    
+    # Await endpoint
+    response = await call_next(request)
+
+    # Decode access token
+    payload = decode_access_token(access_token)
+    username = payload.get('sub')
+
+    # Generate new HS256 access token
+    new_access_token = generate_access_token(data={"sub": username})
+
+    # Edit authorization header with new access token
+    response.headers['WWW-Authenticate'] = f"Bearer {new_access_token}"
+
+    # Create expiration date of 2 hours
+    expire = datetime.utcnow() + timedelta(minutes=1440)
+    expire = expire.timestamp()
+    
+    # Store token and expiration in blacklisted_tokens
+    blacklisted_tokens[expire] = access_token
+
+    return response
+
+@app.get('/')
 def handle():
-    return { "blacklisted tokens" : blacklisted_tokens }
+    return { "blacklisted tokens": blacklisted_tokens }
 
-@app.get('/v1/auth/protected')
-def handle(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
-
-    if credentials is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    if not is_user_authorized(credentials.credentials):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-    return { "message": "OK" }
+@app.get("/v1/auth/protected") #NOTE Check if this works
+def handle():
+    return { "message": "Authorized" }
 
 @app.post("/v1/auth/logout")
 async def handle(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
-
     # Validate token
     if not is_user_authorized(credentials.credentials):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
@@ -75,8 +113,7 @@ async def handle(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
     expire = expire.timestamp()
     
     # Store token and expiration in blacklisted_tokens
-    blacklisted_tokens[credentials.credentials] = expire
-    
+    blacklisted_tokens[expire] = credentials.credentials
     
     return { "message": "OK" }
         
@@ -105,7 +142,6 @@ async def handle(user: User):
             # Delete blacklisted token
             del blacklisted_tokens[header_to_token[encoded_name]]
             
-        
         # Generate new HS256 access token
         token = generate_access_token(data={"sub": user.name})
         return {"access_token": token, "token_type": "bearer"}
@@ -135,20 +171,21 @@ def is_user_authorized(access_token: str):
         if username is None or access_token in blacklisted_tokens:
             return False
         return True
-    except JWTError:
-        return False
-    except AttributeError:
+    except (JWTError, AttributeError):
         return False
 
 def generate_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=30)
+    expire = datetime.utcnow() + timedelta(minutes=24*60)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
     return encoded_jwt
 
 def decode_access_token(encoded_jwt: str):
-    return jwt.decode(encoded_jwt, SECRET_KEY, algorithms=["HS256"])
+    try:
+        return jwt.decode(encoded_jwt, SECRET_KEY, algorithms=["HS256"])
+    except JWTError:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=JWTError)
 
 
 if __name__ == "__main__":
