@@ -1,7 +1,7 @@
 import socket
 from threading import Thread
 
-class relay_box():
+class RelayBox():
     def __init__(self, host_port = 11111, tello_ip='192.168.137.1', backend_server_ip = '123.123.123.123'):
         
         self.ENCODING = 'utf-8'
@@ -31,7 +31,7 @@ class relay_box():
         self.session_port_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.session_port_socket.connect((self.backend_server_ip, self.backend_server_session_port))
                 
-        session_ports = relay_box.get_session_ports()
+        session_ports = RelayBox.get_session_ports()
 
         self.backend_server_udp_port = session_ports[1]
         self.backend_server_tcp_port = session_ports[0]
@@ -86,17 +86,17 @@ class relay_box():
 
     
     def start_tcp_command_thread(self):
-        tcp_command_thread = Thread(target=relay_box.process_client_commands, args=(self), daemon=True)
+        tcp_command_thread = Thread(target=RelayBox.process_client_commands, args=(self), daemon=True)
         tcp_command_thread.start()
 
 
     def start_video_feed_thread(self):
-        video_feed_thread = Thread(target=relay_box.process_drone_feed, args=(self), daemon=True)
+        video_feed_thread = Thread(target=RelayBox.process_drone_feed, args=(self), daemon=True)
         video_feed_thread.start()
 
 
 
-test = relay_box()
+test = RelayBox()
 
 test.start_tcp_command_thread()
 test.start_video_feed_thread()
