@@ -2,6 +2,7 @@
 #pip install "python-jose[cryptography]"
 #pip install "passlib[bcrypt]"
 from datetime import datetime, timedelta
+from typing import Callable
 from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt #jwt & pyjwt
@@ -15,10 +16,10 @@ from frontend_origins import add_origins
 
 SECRET_KEY = str(getenv('SECRET_KEY'))
 
-fake_users_db = { #TODO: Use MongoDB
+fake_users_db = { #NOTE: Use database
     "admin": {
         "name": "admin",
-        "hashed_password": "$2b$12$mE3KlrNxXcdb7Hn4g3Je2ulIcXwQj/vhLa8ez412aojaSJGf/5VIG" #123
+        "hashed_password": "$bcrypt-sha256$v=2,t=2b,r=12$2716btCwy5q5DcTX9qpMXe$quQWVYmOTtSjC/xT3n7ZXXRgxgL0Th2" #123
     }
 }
 
@@ -39,9 +40,9 @@ class User(BaseModel):
 
 
 app = FastAPI()
-bearer = HTTPBearer()
 app = add_origins(app)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+bearer = HTTPBearer()
+pwd_context = CryptContext(schemes=["bcrypt_sha256"]) # Apparently more secure than just bcrypt
 
 @app.middleware("http")
 async def authorization(request: Request, call_next):
