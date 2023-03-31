@@ -111,21 +111,6 @@ async def handle(user: User):
             headers={"WWW-Authenticate": "Bearer"}
         )
         
-    # Encode user.name
-    encoded_name = jwt.encode({'sub': user.name}, SECRET_KEY, algorithm="HS256")
-    
-    # Remove everything that not the encoded user.name
-    encoded_name = encoded_name.split('.')[0]
-    
-    # Map the encoded user names to their corresponding keys in blacklisted tokens
-    header_to_token = {key.split(".")[0]: key for key in blacklisted_tokens}
-    
-    # Is user.name (encoded in HS256) present in the map?
-    if encoded_name in header_to_token:
-
-        # Delete blacklisted token
-        del blacklisted_tokens[header_to_token[encoded_name]]
-        
     # Generate new HS256 access token
     token = generate_access_token(data={"sub": user.name})
     return {"access_token": token, "token_type": "bearer"}

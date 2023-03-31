@@ -6,7 +6,7 @@ class RelayBox():
         
         self.ENCODING = 'utf-8'
         self.command = None
-
+        
         # The ip and specific listening port of the backend server.
         self.backend_server_ip = backend_server_ip
         self.backend_server_session_port = 5000
@@ -14,7 +14,7 @@ class RelayBox():
         self.host_ip = ''
         self.host_port = host_port
         
-        # Tello stationmode ip, !!! on specific network !!!
+        # Tello stationmode ip, !!! on specific network !!!w
         self.tello_ip = tello_ip
         self.tello_port = 8889
         self.tello_addr = (self.tello_ip, self.tello_port)
