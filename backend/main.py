@@ -22,6 +22,13 @@ fake_users_db = { #NOTE: Use database
     }
 }
 
+fake_relay_db = {
+    554: {
+        "id": 554,
+        "key": "nigga" # This should be hashed!
+    }
+}
+
 blacklisted_tokens = {} #NOTE: Use database
 
 routes_with_middleware = [
@@ -37,6 +44,9 @@ class User(BaseModel):
     name: str
     password: str
 
+class RelayHandshake(BaseModel):
+    id: int
+    key: str
 
 app = FastAPI()
 app = add_origins(app)
@@ -93,6 +103,28 @@ async def authorization(request: Request, call_next):
 
     return response
 
+@app.post("/v1/auth/ports/relay") # <-- after handshake?
+def handle():
+    ...
+
+@app.post("/v1/auth/login/relay")
+def handle(relay: RelayHandshake):
+    
+    # If relay basemodel has no information
+    if not relay:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST)
+    
+    # If relay key or id is not authorized
+    if not authenticate_relay(relay):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED)
+    
+    # Generate new HS256 access token
+    token = generate_access_token(data={'sub': relay.id}, minutes=24*60)
+    return {"access_token": f"Bearer {token}"}
+
+
 @app.get("/v1/auth/protected")
 def handle():
     return { "message": "Authorized" }
@@ -112,8 +144,8 @@ async def handle(user: User):
         )
         
     # Generate new HS256 access token
-    token = generate_access_token(data={"sub": user.name})
-    return {"access_token": token, "token_type": "bearer"}
+    token = generate_access_token(data={"sub": user.name}, minutes=24*60)
+    return {"access_token": f"Bearer {token}"}
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool: #TODO Make this more secure
@@ -129,7 +161,16 @@ def authenticate_user(username: str, password: str):
         return False
     return True
 
-def is_user_authorized(access_token: str):
+def authenticate_relay(relay: RelayHandshake) -> bool:
+    if relay.id not in fake_relay_db:
+        return False
+    
+    if relay.key != fake_relay_db[relay.id]['key']:
+        return False
+
+    return True
+
+def is_user_authorized(access_token: str) -> bool:
     try:
         # Decode access token
         payload = decode_access_token(access_token)
@@ -143,9 +184,9 @@ def is_user_authorized(access_token: str):
     except (JWTError, AttributeError):
         return False
 
-def generate_access_token(data: dict):
+def generate_access_token(data: dict, minutes: int) -> Token: # Is this right returntype?
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=24*60)
+    expire = datetime.utcnow() + timedelta(minutes=minutes)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
     return encoded_jwt

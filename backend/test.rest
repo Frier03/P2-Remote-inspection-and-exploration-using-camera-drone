@@ -11,7 +11,7 @@ Content-Type: application/json
 ###
 
 GET http://localhost:8000/v1/auth/protected
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MDM1MTEzNH0.XwX1uBqqZ_26TK3xVWdLisNa_TBA_m9m49jabCdgzps
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MDM1MTcxM30.28IdoEFVUCYYjBpycwuyNxTW3uQQD3nnWMGNTb2yAsw
 
 ###
 
@@ -20,4 +20,15 @@ GET http://localhost:8000/
 ###
 
 POST http://localhost:8000/v1/auth/logout
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY3OTY1MTkxM30.fMYzqjXfoRym4Br9papkJyTSBGHuwFeX6wDh5Xp3-g8
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MDM1MTYyOX0.uEJMorAeBdQbxUxMJsCGf6Z74JBWBAJ-zoEk0WK3P5A
+
+
+###
+
+PUT http://localhost:8000/v1/auth/login/relay
+Content-Type: application/json
+
+{
+    "id": "554",
+    "key": "nigga"
+}
