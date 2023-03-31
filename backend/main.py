@@ -2,9 +2,8 @@
 #pip install "python-jose[cryptography]"
 #pip install "passlib[bcrypt]"
 from datetime import datetime, timedelta
-from typing import Callable
-from fastapi import Depends, FastAPI, HTTPException, status, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import FastAPI, HTTPException, status, Request
+from fastapi.security import HTTPBearer
 from jose import JWTError, jwt #jwt & pyjwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -93,10 +92,6 @@ async def authorization(request: Request, call_next):
     blacklisted_tokens[expire] = access_token
 
     return response
-
-@app.get('/')
-def handle():
-    return { "blacklisted tokens": blacklisted_tokens }
 
 @app.get("/v1/auth/protected")
 def handle():
