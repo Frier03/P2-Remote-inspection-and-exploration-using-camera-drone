@@ -25,13 +25,13 @@ fake_users_db = { #NOTE: Use database
 fake_relay_db = {
     554: {
         "id": 554,
-        "key": "nigga" # This should be hashed!
+        "key": "123" # This should be hashed!
     }
 }
 
 blacklisted_tokens = {} #NOTE: Use database
 
-routes_with_middleware = [
+routes_with_authorization = [
     "/v1/auth/protected",
     "/v1/auth/logout"
 ]
@@ -56,7 +56,7 @@ pwd_context = CryptContext(schemes=["bcrypt_sha256"]) # Apparently more secure t
 @app.middleware("http")
 async def authorization(request: Request, call_next):
     # Routes with no authentication
-    if request.url.path not in routes_with_middleware: # Routes with no authentication
+    if request.url.path not in routes_with_authorization: # Routes with no authentication
         return await call_next(request)
     
     # Get access token from headers
