@@ -22,10 +22,13 @@ active_relays = {}
 
 routes_with_authorization = [
     "/v1/auth/protected",
-    "/v1/auth/logout",
-    "/v1/auth/relay/new_drone",
-    "/v1/auth/relay/drones"
+    "/v1/auth/logout"
 ]
+""" #NOTE: Add to routes_with_authorization after testing
+    "/v1/auth/relay/new_drone",
+    "/v1/auth/relay/drones",
+    "/v1/auth/relays"
+"""
 
 class TokenModel(BaseModel):
     access_token: str
@@ -118,8 +121,18 @@ def handle(relay: RelayHandshakeModel):
     result = {}
     for drone_key in relay.drones.keys():
         drone = relay.drones[drone_key]
-        result[drone_key] = { "name": drone.name }
+        result[drone_key] = { "name": drone.name, "ports": drone.ports }
     
+    return result
+
+# Relaybox
+@app.post("/v1/auth/relays")
+def handle():
+    result = {}
+    for relay_key in active_relays.keys():
+        relay = active_relays[relay_key]
+        result[relay_key] = { "name": relay.name, "drones": relay.drones }
+        
     return result
 
 # Relaybox
@@ -131,18 +144,22 @@ def handle(drone: NewDroneModel):
             detail=f"{drone.parent} does not exist or is not online",
             status_code=status.HTTP_400_BAD_REQUEST)
     
+    # Check if drone name already exist in the relay drones list
+    if drone.name in active_relays[drone.parent].drones:
+        raise HTTPException(
+            detail=f"{drone.name} already exist or online",
+            status_code=status.HTTP_409_CONFLICT)
+        
     # Find that relay object now
     relay = active_relays[drone.parent]
     
-    # Add new drone to relay
-    relay.add_drone(drone.name)
-    print(relay.drones[drone.name].name)
-    
-    # Get available ports!
-    ...
+    # Add new drone to relay and get available ports
+    ports = relay.add_drone(drone.name)
+
+    #print(relay.drones[drone.name].name)
     return { "ports": {
-        "UDP": 2222,
-        "BACKEND": 2223
+        "status": ports[0],
+        "video": ports[1]
     } }
     
 # Relaybox
@@ -153,7 +170,7 @@ def handle(relay: RelayHandshakeModel):
             status_code=status.HTTP_401_UNAUTHORIZED)
 
     # Initialize new Relaybox Class
-    relay = Relay(relay.name)
+    relay = Relay(relay.name, active_relays)
 
     # Store new active relay
     active_relays[relay.name] = relay
