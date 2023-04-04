@@ -23,7 +23,8 @@ active_relays = {}
 routes_with_authorization = [
     "/v1/auth/protected",
     "/v1/auth/logout",
-    "/v1/auth/relay/new_drone"
+    "/v1/auth/relay/new_drone",
+    "/v1/auth/relay/drones"
 ]
 
 class TokenModel(BaseModel):
@@ -34,9 +35,9 @@ class UserModel(BaseModel):
     name: str
     password: str
 
-class RelayModel(BaseModel):
+class RelayHandshakeModel(BaseModel):
     name: str
-    password: str
+    password: str = None
 
 class NewDroneModel(BaseModel):
     name: str
@@ -103,6 +104,25 @@ async def authorization(request: Request, call_next):
     return response
 
 # Relaybox
+@app.post("/v1/auth/relay/drones")
+def handle(relay: RelayHandshakeModel):
+    # Check if relay is online/exist
+    if relay.name not in active_relays.keys():
+        raise HTTPException(
+            detail=f"{relay.name} does not exist or is not online",
+            status_code=status.HTTP_400_BAD_REQUEST)
+    
+    # Find that relay object now
+    relay = active_relays[relay.name]
+
+    result = {}
+    for drone_key in relay.drones.keys():
+        drone = relay.drones[drone_key]
+        result[drone_key] = { "name": drone.name }
+    
+    return result
+
+# Relaybox
 @app.post("/v1/auth/relay/new_drone")
 def handle(drone: NewDroneModel):
     # Check if drones parent (relay) is online/exist
@@ -127,7 +147,7 @@ def handle(drone: NewDroneModel):
     
 # Relaybox
 @app.post("/v1/auth/relay/handshake")
-def handle(relay: RelayModel):
+def handle(relay: RelayHandshakeModel):
     if not authenticate_relay(relay):
          raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED)
@@ -181,7 +201,7 @@ def authenticate_user(user: UserModel):
         return False
     return True
 
-def authenticate_relay(relay: RelayModel) -> bool:
+def authenticate_relay(relay: RelayHandshakeModel) -> bool:
     relay_exist = mongo.name_exist({ 'name': relay.name }, mongo.relays_collection)
     if not relay_exist:
         return False
