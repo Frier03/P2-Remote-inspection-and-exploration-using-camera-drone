@@ -108,7 +108,8 @@ def handle(drone: NewDroneModel):
     # Check if drones parent (relay) is online/exist
     if drone.parent not in active_relays.keys():
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED)
+            detail=f"{drone.parent} does not exist or is not online",
+            status_code=status.HTTP_400_BAD_REQUEST)
     
     # Find that relay object now
     relay = active_relays[drone.parent]
