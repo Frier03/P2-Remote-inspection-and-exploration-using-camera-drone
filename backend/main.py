@@ -1,4 +1,3 @@
-#uvicorn main:app --reload
 #pip install "python-jose[cryptography]"
 #pip install "passlib[bcrypt]"
 from datetime import datetime, timedelta
@@ -16,64 +15,10 @@ from mongodb_handler import MongoDB
 
 SECRET_KEY = str(getenv('SECRET_KEY'))
 
-fake_users_db = { #NOTE: Use database
-    "admin": {
-        "name": "admin",
-        "hashed_password": "$bcrypt-sha256$v=2,t=2b,r=12$2716btCwy5q5DcTX9qpMXe$quQWVYmOTtSjC/xT3n7ZXXRgxgL0Th2" #123
-    }
-}
-
 fake_relay_db = {
     "Relay_4444": ...,
     "Relay_4445": "21313"
 }
-
-"""fake_relay_db = {
-    ObjectId: {
-        "name": "Relay_4444",
-        "key": "biow2hrf9283h892r2h",
-        "drones": [
-            {
-                "ID": "Drone1",
-                "LOCAL_IP": "192.168.1.1",
-                "other": "data"
-            },
-            {
-                "ID": "Drone2",
-                "LOCAL_IP": "192.168.1.2",
-                "other": "data"
-            },
-            {
-                "ID": "Drone3",
-                "LOCAL_IP": "192.168.1.3",
-                "other": "data"
-            },
-        ]
-    },
-
-    ObjectId: {
-        "name": "Relay_4446",
-        "key": "tuf63f73jt9j3jt6dj",
-        "drones": [
-            {
-                "ID": "Drone1",
-                "LOCAL_IP": "192.168.1.1",
-                "other": "data"
-            },
-            {
-                "ID": "Drone2",
-                "LOCAL_IP": "192.168.1.2",
-                "other": "data"
-            },
-            {
-                "ID": "Drone3",
-                "LOCAL_IP": "192.168.1.3",
-                "other": "data"
-            },
-        ]
-    },
-}"""
-
 
 blacklisted_tokens = {} #NOTE: Use database
 
@@ -82,23 +27,29 @@ routes_with_authorization = [
     "/v1/auth/logout"
 ]
 
-class Token(BaseModel):
+class TokenModel(BaseModel):
     access_token: str
     token_type: str
 
-class User(BaseModel):
+class UserModel(BaseModel):
     name: str
     password: str
 
-class RelayHandshake(BaseModel):
-    id: int
-    key: str
+class RelayModel(BaseModel):
+    name: str
+    password: str
+
+class NewDroneModel(BaseModel):
+    name: str
+    parent: str
 
 
 app = FastAPI()
 app = add_origins(app)
+
 bearer = HTTPBearer()
 pwd_context = CryptContext(schemes=["bcrypt_sha256"]) # Apparently more secure than just bcrypt
+
 mongo = MongoDB()
 mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
 
@@ -152,29 +103,15 @@ async def authorization(request: Request, call_next):
 
     return response
 
-@app.post("/v1/api/relay/")
-def handle(request: Request):
-
-    # Get json from relaybox from the internet
-    payload = request.json()
-    name = payload.get('name')
-    # key = payload.get('key')
-    
-    # Validate key
-
-    drones = payload.get('drones')
-
-    # What happens when a drone connects to n relaybox?
-    # We need to know the id for the relaybox
-    
+# Relaybox
+@app.post("/v1/auth/relay/new_drone")
+def handle(new_drone: NewDroneModel):
+    # Check if drones parent (relay) is online/exist
     ...
 
-@app.post("/v1/auth/ports/relay") # <-- after handshake?
-def handle():
-    ...
-
-@app.post("/v1/auth/login/relay") # First handshake from relay to backend
-def handle(relay: RelayHandshake):
+# Relaybox
+@app.post("/v1/auth/relay/handshake")
+def handle(relay: RelayModel):
     
     # If relay basemodel has no information
     if not relay:
@@ -182,27 +119,28 @@ def handle(relay: RelayHandshake):
             status_code=status.HTTP_400_BAD_REQUEST)
     
     # If relay key or id is not authorized #NOTE: Vent med det
-    #if not authenticate_relay(relay):
-    #     raise HTTPException(
-    #        status_code=status.HTTP_401_UNAUTHORIZED)
+    if not authenticate_relay(relay):
+         raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED)
     
     # Generate new HS256 access token
-    token = generate_access_token(data={'sub': relay.id}, minutes=24*60)
+    token = generate_access_token(data={'sub': relay.name}, minutes=24*60)
     return {"access_token": f"Bearer {token}"}
 
-
+# Frontend
 @app.get("/v1/auth/protected")
 def handle():
     return { "message": "Authorized" }
 
+# Frontend
 @app.post("/v1/auth/logout")
 async def handle():
     return { "message": "Logout" }
 
-
+# Frontend
 @app.post("/v1/auth/login")
-async def handle(user: User):        
-    if not authenticate_user(user.name, user.password):
+async def handle(user: UserModel):        
+    if not authenticate_user(user):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -220,21 +158,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool: #TODO Ma
         return False
     return pwd_context.verify(plain_password, hashed_password) # True/False depends if both hashes passwords matches
 
-def authenticate_user(username: str, password: str):
-    user_exist = mongo.user_exist({ 'name': username })
+def authenticate_user(user: UserModel):
+    user_exist = mongo.name_exist({ 'name': user.name }, mongo.users_collection)
     if not user_exist:
         return False
-    if not verify_password(password, user_exist.get('hashed_password')):
+    if not verify_password(user.password, user_exist.get('hashed_password')):
         return False
     return True
 
-def authenticate_relay(relay: RelayHandshake) -> bool:
-    if relay.id not in fake_relay_db:
+def authenticate_relay(relay: RelayModel) -> bool:
+    relay_exist = mongo.name_exist({ 'name': relay.name }, mongo.relays_collection)
+    if not relay_exist:
         return False
-    
-    if relay.key != fake_relay_db[relay.id]['key']:
+    if not verify_password(relay.password, relay_exist.get('hashed_password')):
         return False
-
     return True
 
 def is_user_authorized(access_token: str) -> bool:
@@ -251,7 +188,7 @@ def is_user_authorized(access_token: str) -> bool:
     except (JWTError, AttributeError):
         return False
 
-def generate_access_token(data: dict, minutes: int) -> Token: # Is this right returntype?
+def generate_access_token(data: dict, minutes: int) -> TokenModel: # Is this right returntype?
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=minutes)
     to_encode.update({"exp": expire})
