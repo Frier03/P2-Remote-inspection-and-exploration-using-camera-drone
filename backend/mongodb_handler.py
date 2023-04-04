@@ -2,22 +2,23 @@ import pymongo, certifi
 from typing import Union
 from bson.objectid import ObjectId
 
-
-MONGODB_USERNAME="admin"
-MONGODB_PASSWORD="kmEuqHYeiWydyKpc"
-connection_url = f"mongodb+srv://{MONGODB_USERNAME}:{MONGODB_PASSWORD}@cluster.eoaspgc.mongodb.net/?retryWrites=true&w=majority" 
-
-
 class MongoDB:
     def __init__(self) -> None:
-        certify = certifi.where() # NOTE: some reason, not all users can connect without this (from xX_Simon_Xx)
-        client = pymongo.MongoClient(connection_url, tlsCAFile=certify)
-        database = client.get_database('Backend')
+        self.client: object = None
+        self.users_collection: object = None
+        self.relays_collection: object = None
+        
+    def connect(self, mongodb_username: str, mongodb_password: str):
+        certify = certifi.where() # NOTE: some reason, not all users can connect without this
+        connection_url = f"mongodb+srv://{mongodb_username}:{mongodb_password}@cluster.eoaspgc.mongodb.net/?retryWrites=true&w=majority" 
+
+        self.client = pymongo.MongoClient(connection_url, tlsCAFile=certify)
+        database = self.client.get_database('Backend')
         self.users_collection = database.get_collection('Users')
         self.relays_collection = database.get_collection('Relays')
-        self.jwt_blacklist_collection = database.get_collection('JWT Blacklist')
-
-    def user_exist(self, name_dict: dict[str, str] = None) -> Union[dict, None]:
+        
+        
+    def user_exist(self, name_dict: dict[str, str]) -> Union[dict, None]:
         if len(name_dict) > 1 or len(name_dict) == 0: #NOTE: dict must only have one key-val pair 
             return
         if 'name' not in name_dict.keys(): #NOTE: dict must be { "name": ... }
@@ -27,7 +28,6 @@ class MongoDB:
     def insert_relay_instance(self, relay_name) -> ObjectId: #NOTE: Insert new instance of a relay to document with no data for now
         relay = self.relays_collection.insert_one({'name': relay_name})
         return relay.inserted_id
-
 
     def delete_relay_instance(self, _id) -> None:
         self.relays_collection.delete_one({'_id' : ObjectId(_id)})
@@ -42,6 +42,7 @@ class MongoDB:
     
 if __name__ == '__main__':
     mongo = MongoDB()
-    #print(mongo.user_exist(name_dict={'name': 'JohnWick'}))
-    #_id = mongo.insert_relay_instance()
-    print(mongo.relay_id("642c0810707dfacc27b750e8"))
+    mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
+    
+    user = mongo.user_exist({ 'name': 'JohnWick' })
+    print(user)
