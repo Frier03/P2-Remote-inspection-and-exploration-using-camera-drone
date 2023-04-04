@@ -12,19 +12,18 @@ from os import getenv
 
 from frontend_origins import add_origins
 from mongodb_handler import MongoDB
+from relaybox import Relay
 
 SECRET_KEY = str(getenv('SECRET_KEY'))
 
-fake_relay_db = {
-    "Relay_4444": ...,
-    "Relay_4445": "21313"
-}
-
 blacklisted_tokens = {} #NOTE: Use database
+
+active_relays = {}
 
 routes_with_authorization = [
     "/v1/auth/protected",
-    "/v1/auth/logout"
+    "/v1/auth/logout",
+    "/v1/auth/relay/new_drone"
 ]
 
 class TokenModel(BaseModel):
@@ -89,7 +88,7 @@ async def authorization(request: Request, call_next):
         username = payload.get('sub')
 
         # Generate new HS256 access token
-        new_access_token = generate_access_token(data={"sub": username})
+        new_access_token = generate_access_token(data={"sub": username}, minutes=24*60)
 
         # Edit authorization header with new access token
         response.headers['WWW-Authenticate'] = f"Bearer {new_access_token}"
@@ -105,24 +104,39 @@ async def authorization(request: Request, call_next):
 
 # Relaybox
 @app.post("/v1/auth/relay/new_drone")
-def handle(new_drone: NewDroneModel):
+def handle(drone: NewDroneModel):
     # Check if drones parent (relay) is online/exist
+    if drone.parent not in active_relays.keys():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED)
+    
+    # Find that relay object now
+    relay = active_relays[drone.parent]
+    
+    # Add new drone to relay
+    relay.add_drone(drone.name)
+    print(relay.drones[drone.name].name)
+    
+    # Get available ports!
     ...
-
+    return { "ports": {
+        "UDP": 2222,
+        "BACKEND": 2223
+    } }
+    
 # Relaybox
 @app.post("/v1/auth/relay/handshake")
 def handle(relay: RelayModel):
-    
-    # If relay basemodel has no information
-    if not relay:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST)
-    
-    # If relay key or id is not authorized #NOTE: Vent med det
     if not authenticate_relay(relay):
          raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED)
-    
+
+    # Initialize new Relaybox Class
+    relay = Relay(relay.name)
+
+    # Store new active relay
+    active_relays[relay.name] = relay
+
     # Generate new HS256 access token
     token = generate_access_token(data={'sub': relay.name}, minutes=24*60)
     return {"access_token": f"Bearer {token}"}
@@ -139,7 +153,7 @@ async def handle():
 
 # Frontend
 @app.post("/v1/auth/login")
-async def handle(user: UserModel):        
+async def handle(user: UserModel):
     if not authenticate_user(user):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
