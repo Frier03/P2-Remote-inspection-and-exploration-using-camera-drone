@@ -1,0 +1,19 @@
+# Download CLIENT Rest from VS code to use this file
+
+POST http://localhost:8000/v1/auth/relay/handshake
+Content-Type: application/json
+
+{
+    "name": "relay_0001",
+    "password": "123"
+}
+
+###
+
+POST http://localhost:8000/v1/auth/relay/new_drone
+Content-Type: application/json
+
+{
+    "name": "drone_01",
+    "parent": "relay_0001"
+}
