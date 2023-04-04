@@ -1,18 +1,61 @@
+class Drone:
+    def __init__(self, name):
+        self.name = name
+        self.ports = {
+            "status": None,
+            "video": None
+        }
+
 class Relay:
-    def __init__(self, name) -> None:
+    def __init__(self, name, active_relays) -> None:
         self.name = name
         self.drones = {}
-        
+        self.active_relays = active_relays
+
     def add_drone(self, name):
+        # Check for available ports
+        used_ports = set()
+        for relay in self.active_relays.values():
+            for drone in relay.drones.values():
+                used_ports.update(drone.ports.values())
+        print(used_ports)
+        for port in range(2222, 3334, 2):
+            if port not in used_ports:
+                status_port = port
+                video_port = port + 1
+                break
+        else:
+            raise ValueError("All available ports are taken.")
+
+        # Create new Drone instance
         drone = Drone(name)
+        drone.ports["status"] = status_port
+        drone.ports["video"] = video_port
         self.drones[name] = drone
 
+        return status_port, video_port
 
-class Drone:
-    def __init__(self, name) -> None:
-        self.name = name
 
 
 if __name__ == '__main__':
     # New relay connects { "name": "Relay_4444" }
-    relay = Relay("Relay_4444")
+    relay0001 = Relay("Relay_0001")
+    relay0002 = Relay("Relay_0002")
+    relay0003 = Relay("Relay_0003")
+    
+    # New drone has connected to Relay_0002
+    for i in range(300):
+        if i == 10:
+            first_drone_name = next(iter(relay0002.drones.keys()))
+            del relay0002.drones[first_drone_name]
+            print(f"Removed first drone {first_drone_name}")
+        elif i == 20:
+            drone_names = list(relay0002.drones.keys())
+            fourteenth_drone_name = drone_names[13]
+            del relay0002.drones[fourteenth_drone_name]
+            print(f"Removed 14th drone {fourteenth_drone_name}")
+        
+        ports = relay0002.add_drone(f"drone_{i}")
+        print(ports)
+        from time import sleep
+        sleep(2)
