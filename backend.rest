@@ -1,0 +1,51 @@
+GET https://api.com/drones
+Content-Type: application/json
+
+# Name er til at finde en relay for dronepiloten
+# KEY er til at bekræfte at relayboxen siger hvem den er. Den ændres efter hver session
+
+{
+    "NAME": "Relay_4444", 
+    "KEY": "WORDPASS"
+}
+
+
+# [BACKEND] På databasen oprettes nyt dokument. Det dokument indholder
+{
+    "_id": "ObjectID('sdfdsfew4343546rer')",
+    "name": "Relay_4444",
+    "drones": [
+        { 
+            "Drone1": {
+                "id": "Drone1",
+                "port_video_backend": 5555,
+            }, 
+            
+            "Drone2": {
+                "id": "Drone2",
+                "port_video_backend": 5556,
+            }
+        }
+    ]
+}
+
+# [BACKEND] Laver ny init for Relay class
+{
+    "_id": "ObjectID('sdfdsfew4343546rer')",
+    "name": "Relay_4444",
+    "drones": [
+        { 
+            "Drone1": {
+                "id": "Drone1",
+                "port_video_backend": 5555
+            }, 
+            
+            "Drone2": {
+                "id": "Drone2",
+                "port_video_backend": 5556
+            }
+        }
+    ]
+}
+
+

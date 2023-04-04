@@ -23,11 +23,56 @@ fake_users_db = { #NOTE: Use database
 }
 
 fake_relay_db = {
-    554: {
-        "id": 554,
-        "key": "123" # This should be hashed!
-    }
+    "Relay_4444": ...,
+    "Relay_4445": "21313"
 }
+
+fake_relay_db = {
+    ObjectId: {
+        "name": "Relay_4444",
+        "key": "biow2hrf9283h892r2h",
+        "drones": [
+            {
+                "ID": "Drone1",
+                "LOCAL_IP": "192.168.1.1",
+                "other": "data"
+            },
+            {
+                "ID": "Drone2",
+                "LOCAL_IP": "192.168.1.2",
+                "other": "data"
+            },
+            {
+                "ID": "Drone3",
+                "LOCAL_IP": "192.168.1.3",
+                "other": "data"
+            },
+        ]
+    },
+
+    ObjectId: {
+        "name": "Relay_4446",
+        "key": "tuf63f73jt9j3jt6dj",
+        "drones": [
+            {
+                "ID": "Drone1",
+                "LOCAL_IP": "192.168.1.1",
+                "other": "data"
+            },
+            {
+                "ID": "Drone2",
+                "LOCAL_IP": "192.168.1.2",
+                "other": "data"
+            },
+            {
+                "ID": "Drone3",
+                "LOCAL_IP": "192.168.1.3",
+                "other": "data"
+            },
+        ]
+    },
+}
+
 
 blacklisted_tokens = {} #NOTE: Use database
 
@@ -47,6 +92,7 @@ class User(BaseModel):
 class RelayHandshake(BaseModel):
     id: int
     key: str
+
 
 app = FastAPI()
 app = add_origins(app)
@@ -103,11 +149,28 @@ async def authorization(request: Request, call_next):
 
     return response
 
+@app.post("/v1/api/relay/")
+def handle(request: Request):
+
+    # Get json from relaybox from the internet
+    payload = request.json()
+    name = payload.get('name')
+    # key = payload.get('key')
+    
+    # Validate key
+
+    drones = payload.get('drones')
+
+    # What happens when a drone connects to n relaybox?
+    # We need to know the id for the relaybox
+    
+    ...
+
 @app.post("/v1/auth/ports/relay") # <-- after handshake?
 def handle():
     ...
 
-@app.post("/v1/auth/login/relay")
+@app.post("/v1/auth/login/relay") # First handshake from relay to backend
 def handle(relay: RelayHandshake):
     
     # If relay basemodel has no information
@@ -115,10 +178,10 @@ def handle(relay: RelayHandshake):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST)
     
-    # If relay key or id is not authorized
-    if not authenticate_relay(relay):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED)
+    # If relay key or id is not authorized #NOTE: Vent med det
+    #if not authenticate_relay(relay):
+    #     raise HTTPException(
+    #        status_code=status.HTTP_401_UNAUTHORIZED)
     
     # Generate new HS256 access token
     token = generate_access_token(data={'sub': relay.id}, minutes=24*60)
