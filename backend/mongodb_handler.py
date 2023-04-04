@@ -18,13 +18,13 @@ class MongoDB:
         self.relays_collection = database.get_collection('Relays')
         
         
-    def user_exist(self, name_dict: dict[str, str]) -> Union[dict, None]:
+    def name_exist(self, name_dict: dict[str, str], collection: object) -> Union[dict, None]:
         if len(name_dict) > 1 or len(name_dict) == 0: #NOTE: dict must only have one key-val pair 
             return
         if 'name' not in name_dict.keys(): #NOTE: dict must be { "name": ... }
             return
-        return self.users_collection.find_one(name_dict)
-
+        return collection.find_one(name_dict)
+    
     def insert_relay_instance(self, relay_name) -> ObjectId: #NOTE: Insert new instance of a relay to document with no data for now
         relay = self.relays_collection.insert_one({'name': relay_name})
         return relay.inserted_id
