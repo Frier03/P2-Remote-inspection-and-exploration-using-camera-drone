@@ -11,6 +11,7 @@ Content-Type: application/json
 ###
 
 POST http://localhost:8000/v1/auth/relay/new_drone
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAxIiwiZXhwIjoxNjgwNzE1NTY3fQ.8czvoi1d3tRXcHZRoJQAYM-tsc6Dics5KifxlDLDJG0
 Content-Type: application/json
 
 {
