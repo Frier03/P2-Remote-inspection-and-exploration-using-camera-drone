@@ -4,27 +4,31 @@ POST http://localhost:8000/v1/auth/relay/handshake
 Content-Type: application/json
 
 {
-    "name": "relay_0001",
+    "name": "relay_0002",
     "password": "123"
 }
 
 ###
 
 POST http://localhost:8000/v1/auth/relay/new_drone
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAxIiwiZXhwIjoxNjgwNzE3MzU1fQ.nW5-H1UbmqkER0FsEOZs6rlf2LNbfz3reD7q49kXi5U
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
 Content-Type: application/json
 
 {
-    "name": "drone_01",
+    "name": "drone_02",
     "parent": "relay_0001"
 }
 
 ###
 
 POST http://localhost:8000/v1/auth/relay/drones
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAxIiwiZXhwIjoxNjgwNzE3MzY4fQ.PnsU8Gkd8sYj5EHgCZqvje5lOpnQMxjvQxRwiOCZDEM
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
 Content-Type: application/json
 
 {
-    "name": "relay_0001"
+    "name": "relay_0002"
 }
+
+###
+POST http://localhost:8000/v1/auth/relays
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
