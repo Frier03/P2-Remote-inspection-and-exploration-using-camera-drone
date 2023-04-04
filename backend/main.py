@@ -12,6 +12,7 @@ from starlette.responses import HTMLResponse as starletteHTMLResponse
 from os import getenv
 
 from frontend_origins import add_origins
+from mongodb_handler import MongoDB
 
 SECRET_KEY = str(getenv('SECRET_KEY'))
 
@@ -27,7 +28,7 @@ fake_relay_db = {
     "Relay_4445": "21313"
 }
 
-fake_relay_db = {
+"""fake_relay_db = {
     ObjectId: {
         "name": "Relay_4444",
         "key": "biow2hrf9283h892r2h",
@@ -71,7 +72,7 @@ fake_relay_db = {
             },
         ]
     },
-}
+}"""
 
 
 blacklisted_tokens = {} #NOTE: Use database
@@ -98,6 +99,8 @@ app = FastAPI()
 app = add_origins(app)
 bearer = HTTPBearer()
 pwd_context = CryptContext(schemes=["bcrypt_sha256"]) # Apparently more secure than just bcrypt
+mongo = MongoDB()
+mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
 
 @app.middleware("http")
 async def authorization(request: Request, call_next):
@@ -218,9 +221,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool: #TODO Ma
     return pwd_context.verify(plain_password, hashed_password) # True/False depends if both hashes passwords matches
 
 def authenticate_user(username: str, password: str):
-    if username not in fake_users_db:
+    user_exist = mongo.user_exist({ 'name': username })
+    if not user_exist:
         return False
-    if not verify_password(password, fake_users_db[username]['hashed_password']):
+    if not verify_password(password, user_exist.get('hashed_password')):
         return False
     return True
 
