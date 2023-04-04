@@ -25,20 +25,6 @@ class MongoDB:
             return
         return collection.find_one(name_dict)
     
-    def insert_relay_instance(self, relay_name) -> ObjectId: #NOTE: Insert new instance of a relay to document with no data for now
-        relay = self.relays_collection.insert_one({'name': relay_name})
-        return relay.inserted_id
-
-    def delete_relay_instance(self, _id) -> None:
-        self.relays_collection.delete_one({'_id' : ObjectId(_id)})
-
-    def relay_id_filter(self, _id) -> str: 
-        relay_id = _id[-4:]
-        return relay_id
-
-
-
-    
     
 if __name__ == '__main__':
     mongo = MongoDB()
