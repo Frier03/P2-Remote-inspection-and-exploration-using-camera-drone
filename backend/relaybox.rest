@@ -11,10 +11,20 @@ Content-Type: application/json
 ###
 
 POST http://localhost:8000/v1/auth/relay/new_drone
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAxIiwiZXhwIjoxNjgwNzE1NTY3fQ.8czvoi1d3tRXcHZRoJQAYM-tsc6Dics5KifxlDLDJG0
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAxIiwiZXhwIjoxNjgwNzE3MzU1fQ.nW5-H1UbmqkER0FsEOZs6rlf2LNbfz3reD7q49kXi5U
 Content-Type: application/json
 
 {
     "name": "drone_01",
     "parent": "relay_0001"
+}
+
+###
+
+POST http://localhost:8000/v1/auth/relay/drones
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAxIiwiZXhwIjoxNjgwNzE3MzY4fQ.PnsU8Gkd8sYj5EHgCZqvje5lOpnQMxjvQxRwiOCZDEM
+Content-Type: application/json
+
+{
+    "name": "relay_0001"
 }
