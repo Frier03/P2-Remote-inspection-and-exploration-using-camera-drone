@@ -16,7 +16,7 @@ udp_socket.sendto(bytes("command", 'utf-8'), (tello_ip, tello_port))
 status1 = udp_socket.recvfrom(128)
 print(status1)
 
-# the the first integer is the port for status the second is the video port.
+# the the first integer is the port for status the second is the video port
 udp_socket.sendto(bytes("port 8889 2003", 'utf-8'), (tello_ip, tello_port))
 status2 = udp_socket.recvfrom(128)
 print(status2)
