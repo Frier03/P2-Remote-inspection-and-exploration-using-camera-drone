@@ -10,7 +10,7 @@ class Relaybox:
     def __init__(self, name, password) -> None:
         self.name = name
         self.password = password
-        self.drones = []
+        self.drones = {}
         self.token = None
     
     def connect_to_backend(self) -> None:
@@ -20,11 +20,6 @@ class Relaybox:
 
     def post_drones_to_backend(self) -> None:
         
-        ...
-
-    def add_drone(self) -> None:
-        # find a unique name for the drone
-        # create a class for the drone now
         ...
     
     def scan_for_drone(self, callback) -> None: # THREAD!
@@ -37,35 +32,74 @@ class Relaybox:
             sleep(0.5)
     
     def filter_scanned_drones(self, scanned_drones):
-        # how to know if a drone is connected? if we have a drone in scanned_drones, that is not a part of self.drones
+        # Check for connected drone
         for drone in scanned_drones:
-            if drone not in self.drones:
-                print(f"[CONNECTED] {drone}")
-                self.drones.append(drone)
-        
-        # how to know if a drone is disconnected? if we have a drone in self.drones, that is not a part of scanned_drones
-        for drone in self.drones:
-            if drone not in scanned_drones:
-                print(f"[DISCONNECTED] {drone}")
-                self.drones.remove(drone)
+            ips_mapped = []
+            for name in self.drones:
+                ips_mapped.append(self.drones[name].get('Ip'))
 
+            if drone[0] not in ips_mapped:
+                print(f"[CONNECTED] {drone}")
+                self.add_drone(drone[0])
+        
+        # Check for disconnected drone
+        drones_object_list = []
+        for name in self.drones:
+            drones_object_list.append(self.drones[name].get('objectId'))
+
+        for drone in drones_object_list:
+            ips_mapped = []
+            for x in scanned_drones:
+                ips_mapped.append(x[0])
+            
+            if drone.host not in ips_mapped:
+                print(f"[DISCONNECTED] {drone.name} {drone.host}")
+                self.delete_drone(drone.name)
+
+
+    def add_drone(self, host) -> None:
+        # find a unique name for the drone
+        used_names = []
+        for drone in self.drones.keys():
+            used_names.append(drone)
+        
+        for num in range(1, 255):
+            if "drone_{:03d}".format(num) not in used_names:
+                drone_name = "drone_{:03d}".format(num)
+                break
+
+        # create a class for the drone now
+        drone = Drone(name=drone_name, parent=self.name, host=host)
+        self.drones[drone_name] = { "Ip": host, "objectId": drone }
+
+    def delete_drone(self, name) -> None:
+        object = self.drones[name].get('objectId')
+        del object
+        self.drones.pop(name)
+    
     def heartbeat(self, callback) -> None:
         scan_for_drone_thread = threading.Thread(target=scan_for_drone_thread, args=(callback,))
         scan_for_drone_thread.run()
-        
-    
-
-
 
 class Drone:
-    def __init__(self, name, parent) -> None:
+    def __init__(self, name, parent, host) -> None:
         self.name = name
         self.parent = parent
+        self.host = host
 
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
     #relay.connect_to_backend()
     #relay.heartbeat(relay.filter_scanned_drones)
+    
+    relay.drones = {}
+    relay.filter_scanned_drones( [('192.168.137.200', '00:00:00:00:00')] ) #OK
+    sleep(2)
+    print("\n")
+    relay.filter_scanned_drones( [('192.168.137.200', '00:00:00:00:00'), ('192.168.137.133', '00:00:00:00:00')] ) #OK
+    sleep(2)
+    relay.filter_scanned_drones( [('192.168.137.133', '00:00:00:00:00')] )
+    sleep(2)
+    relay.filter_scanned_drones( [('192.168.137.200', '00:00:00:00:00'), ('192.168.137.133', '00:00:00:00:00')] ) 
+    relay.filter_scanned_drones( [('192.168.137.133', '00:00:00:00:00')] )
 
-    relay.drones = [("192.168.137.123", "mac her"), ("192.168.137.243", "mac her 2")]
-    relay.filter_scanned_drones( [("192.168.137.123", "mac her")] ) # scan_drones calls this function with a list of scanned drones. We just hardcoded one scanned drone in, for testing...
