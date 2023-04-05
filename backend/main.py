@@ -42,7 +42,7 @@ class RelayHandshakeModel(BaseModel):
     name: str
     password: str = None
 
-class NewDroneModel(BaseModel):
+class DroneModel(BaseModel):
     name: str
     parent: str
 
@@ -107,6 +107,28 @@ async def authorization(request: Request, call_next):
     return response
 
 # Relaybox
+@app.post("/v1/auth/relay/drone/disconnected")
+def handle(drone: DroneModel):
+    # Check if drones parent (relay) is not online/exist
+    if drone.parent not in active_relays.keys():
+        raise HTTPException(
+            detail=f"{drone.parent} does not exist or is not online",
+            status_code=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if drone name does not exist in the relay drones list
+    if drone.name not in active_relays[drone.parent].drones:
+        raise HTTPException(
+            detail=f"{drone.name} does not exist in {active_relays[drone.parent].name}",
+            status_code=status.HTTP_409_CONFLICT)
+    
+    # Find that relay object now
+    relay = active_relays[drone.parent]
+
+    # Delete the drone object on relay drones
+    del relay.drones[drone.name]
+
+    return { "message": f"Deleted {drone.name} on {relay.name}"}
+# Relaybox
 @app.post("/v1/auth/relay/drones")
 def handle(relay: RelayHandshakeModel):
     # Check if relay is online/exist
@@ -137,8 +159,8 @@ def handle():
 
 # Relaybox
 @app.post("/v1/auth/relay/new_drone")
-def handle(drone: NewDroneModel):
-    # Check if drones parent (relay) is online/exist
+def handle(drone: DroneModel):
+    # Check if drones parent (relay) is not online/exist
     if drone.parent not in active_relays.keys():
         raise HTTPException(
             detail=f"{drone.parent} does not exist or is not online",
