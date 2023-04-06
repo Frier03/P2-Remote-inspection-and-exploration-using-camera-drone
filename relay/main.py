@@ -3,7 +3,7 @@ import subprocess
 import re
 import threading
 import socket
-from time import sleep
+from time import sleep, time
 
 BACKEND_URL = 'http://localhost:8000/v1/api/relay' # https://example.com/
 ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78']
@@ -14,6 +14,7 @@ class Relaybox:
         self.password = password
         self.drones = {}
         self.token = None
+        self.response_time = None
     
     def connect_to_backend(self) -> None:
         try:
@@ -30,10 +31,6 @@ class Relaybox:
             print("(!) Connected to backend")
         except Exception:
             print(f"Error trying to connect to backend")
-
-
-    def post_drones_to_backend(self) -> None:
-        ...
     
     def scan_for_drone(self, callback) -> None: # THREAD!
         while True:
@@ -54,7 +51,6 @@ class Relaybox:
                 if "Received = 0" in pinging:
                     scanned_drones.remove(drone)
 
-            print(scanned_drones)
             callback(scanned_drones)
     
     def filter_scanned_drones(self, scanned_drones):
@@ -107,10 +103,32 @@ class Relaybox:
         del object
         self.drones.pop(name)
     
-    def heartbeat(self, callback) -> None:
-        print("Started heartbeat...")
-        scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(callback,))
-        scan_for_drone_thread.run()
+    def start(self) -> None:
+        print("[THREAD] Scanning for drones...")
+        scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(self.filter_scanned_drones,))
+        scan_for_drone_thread.start()
+        self.heartbeat() # Call heartbeat
+
+    def heartbeat(self):
+        session = requests.Session()
+        url = "http://localhost:8000/v1/api/relay/heartbeat"
+        timeout = 5.0
+        query = {"name": self.name}
+        while True:
+            print("[THREAD] Sending heartbeat...")
+            start_time = time()
+            try:
+                response = session.get(url, json=query, timeout=timeout).json()
+            except requests.exceptions.Timeout:
+                print("[THREAD] Request timed out")
+                continue
+            except requests.exceptions.RequestException as e:
+                print(f"[THREAD] Request failed: {e}")
+                continue
+            end_time = time()
+            self.response_time = end_time - start_time
+            print(f"[THREAD] Heartbeat response: {response.get('message')}")
+            print(f"[THREAD] Heartbeat response time: {self.response_time:.2f} seconds")
 
     def disconnected_drone(self, drone: object) -> None:
         query = { 'name': drone.name, 'parent': drone.parent }
@@ -119,7 +137,7 @@ class Relaybox:
             print(f"Error: [{response.url}] with status code {response.status_code}")
             print(f"Trying again...")
             self.disconnected_drone(drone)
-    
+
         
 
 class Drone:
@@ -135,45 +153,36 @@ class Drone:
     
     def start(self):
         print(f"Starting {self.name} on {self.parent}")
-
+        
         print(f"[{self.name}] Getting available video ports from backend...", end=' ', flush=True)
-        #self.get_video_port()
-        self.video_port = 2222 # placeholder for testing purposes
-        sleep(3)
+        self.get_video_port()
         print('DONE', flush=True)
         print()
 
         print(f"[{self.name}] Entering SDK mode...", end=' ', flush=True)
         #self.set_drone_sdk()
-        sleep(3)
         print('DONE', flush=True)
         print()
 
         print(f"[{self.name}] Telling drone to use port {self.video_port} for streamon...", end=' ', flush=True)
         #self.set_drone_streamon_port()
-        sleep(3)
         print('DONE', flush=True)
         print()
 
         print(f"[{self.name}] Enabling streamon...", end=' ', flush=True)
         #self.enable_streamon()
-        sleep(3)
         print('DONE', flush=True)
         print()
 
-        for i in range(1, 4): # start 3 threads
-            # [1] video feed (drone -> relay) (UDP)
-            # [2] status (backend -> relay -> drone) (API)
-            # [3] rc cmds (backend -> relay -> drone) (API)
-            print(f"[{self.name}] Starting thread {i}")
-            if i is 1:
-                self.video_thread()
-            elif i is 2:
-                self.status_thread()
-            else:
-                self.rc_thread()
 
-            sleep(1)
+        print(f"[{self.name}] Starting video thread")
+        #self.video_thread()
+        print(f"[{self.name}] Starting status thread")
+        #self.status_thread()
+        print(f"[{self.name}] Starting rc thread")
+        #self.rc_thread()
+
+        sleep(1)
 
     def status_thread(self):
         # Ask drone for status [battery, yaw, altitude...]
@@ -201,7 +210,6 @@ class Drone:
             self.get_video_port()
         
         port = response.json().get('video_port')
-        print(f"[RES] Received port {port} for {self.name} on [{self.parent}]")
         self.video_port = port
 
     def set_drone_sdk(self):
@@ -220,8 +228,9 @@ class Drone:
         return res
     
 if __name__ == '__main__':
-    #relay = Relaybox("relay_0001", "123")
-    #relay.connect_to_backend()
-    #relay.heartbeat(relay.filter_scanned_drones)
-    drone = Drone("drone_01", "relay_0001", "192.168.1.154")
-    drone.start()
+    relay = Relaybox("relay_0001", "123")
+    relay.connect_to_backend()
+    relay.start()
+
+    #drone = Drone("drone_01", "relay_0001", "192.168.1.154")
+    #drone.start()
