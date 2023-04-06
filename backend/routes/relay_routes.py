@@ -1,14 +1,13 @@
-from fastapi import HTTPException, status, APIRouter
+from fastapi import HTTPException, status, APIRouter, Depends
 from passlib.context import CryptContext
 
 from token_helper_functions import generate_access_token
-from mongodb_handler import MongoDB
+from mongodb_handler import get_mongo
 from models import DroneModel, RelayHandshakeModel
 from relaybox import Relay
 
+pwd_context = CryptContext(schemes=["bcrypt_sha256"])
 relay_router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt_sha256"]) # Apparently more secure than just bcrypt
-
 active_relays = {}
 
 @relay_router.post("/")
@@ -89,8 +88,8 @@ def handle(drone: DroneModel):
     
 
 @relay_router.post("/handshake")
-def handle(relay: RelayHandshakeModel):
-    if not authenticate_relay(relay):
+def handle(relay: RelayHandshakeModel, mongo: object = Depends(get_mongo)):
+    if not authenticate_relay(relay, mongo):
          raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED)
 
@@ -105,7 +104,7 @@ def handle(relay: RelayHandshakeModel):
     return {"access_token": f"Bearer {token}"}
 
 
-def authenticate_relay(relay: RelayHandshakeModel) -> bool:
+def authenticate_relay(relay: RelayHandshakeModel, mongo: object) -> bool:
     relay_exist = mongo.name_exist({ 'name': relay.name }, mongo.relays_collection)
     if not relay_exist:
         return False

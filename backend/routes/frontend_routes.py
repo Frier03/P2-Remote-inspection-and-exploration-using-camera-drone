@@ -2,11 +2,11 @@ from fastapi import HTTPException, status, APIRouter, Depends
 from passlib.context import CryptContext
 
 from token_helper_functions import generate_access_token
-from mongodb_handler import MongoDB
+from mongodb_handler import get_mongo
 from models import UserModel
 
-frontend_router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt_sha256"])
+frontend_router = APIRouter()
 
 @frontend_router.get("/protected")
 def handle():
@@ -17,8 +17,7 @@ async def handle():
     return { "message": "Logout" }
 
 @frontend_router.post("/login")
-async def handle(user: UserModel, mongo: MongoDB = Depends()):
-    print(mongo.users_collection)
+async def handle(user: UserModel, mongo: object = Depends(get_mongo)):
     if not authenticate_user(user, mongo):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -31,8 +30,7 @@ async def handle(user: UserModel, mongo: MongoDB = Depends()):
     return {"access_token": f"Bearer {token}"}
 
 
-def authenticate_user(user: UserModel, mongo: MongoDB):
-    print(mongo.users_collection)
+def authenticate_user(user: UserModel, mongo: object):
     user_exist = mongo.name_exist({ 'name': user.name }, mongo.users_collection)
     if not user_exist:
         return False

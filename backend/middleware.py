@@ -15,7 +15,6 @@ blacklisted_tokens = {}
 
 async def middleware(request: Request, call_next):
     # Routes with no authentication
-    print(request.url.path)
     if request.url.path not in routes_with_authorization: # Routes with no authentication
         return await call_next(request)
     
