@@ -18,7 +18,7 @@ class Relaybox:
         try:
             query = { 'name': self.name, 'password': self.password }
             response = requests.post(f'{BACKEND_URL}/handshake', json=query)
-            if response.status_code != 200: # Every HTTPException
+            if response.status_code != 200: # Every HTTPException.
                 print(f"An error occured while trying to connect to URL [{response.url}] with status code {response.status_code}")
                 sleep(2)
                 print(f"Trying again...")
