@@ -4,7 +4,7 @@ import re
 import threading
 from time import sleep
 
-BACKEND_URL = 'http://localhost:8000' # https://example.com/
+BACKEND_URL = 'http://localhost:8000/v1/api/relay' # https://example.com/
 
 class Relaybox:
     def __init__(self, name, password) -> None:
@@ -14,12 +14,22 @@ class Relaybox:
         self.token = None
     
     def connect_to_backend(self) -> None:
-        response = requests.post(f'{BACKEND_URL}/v1/auth/relay/handshake', json={ 'name': self.name, 'password': self.password})
-        token = response.json().get('access_token')
-        self.token = token
+        try:
+            query = { 'name': self.name, 'password': self.password }
+            response = requests.post(f'{BACKEND_URL}/handshake', json=query)
+            if response.status_code != 200: # Every HTTPException
+                print(f"An error occured while trying to connect to URL [{response.url}] with status code {response.status_code}")
+                sleep(2)
+                print(f"Trying again...")
+                self.connect_to_backend()
+
+            token = response.json().get('access_token')
+            self.token = token
+        except Exception:
+            print(f"Error trying to connect to backend")
+
 
     def post_drones_to_backend(self) -> None:
-        
         ...
     
     def scan_for_drone(self, callback) -> None: # THREAD!
@@ -55,6 +65,7 @@ class Relaybox:
             if drone.host not in ips_mapped:
                 print(f"[DISCONNECTED] {drone.name} {drone.host}")
                 self.delete_drone(drone.name)
+                self.disconnected_drone(drone)
 
 
     def add_drone(self, host) -> None:
@@ -81,25 +92,47 @@ class Relaybox:
         scan_for_drone_thread = threading.Thread(target=scan_for_drone_thread, args=(callback,))
         scan_for_drone_thread.run()
 
+    def disconnected_drone(self, drone: object) -> None:
+        query = { 'name': drone.name, 'parent': drone.parent }
+        response = requests.post(f'{BACKEND_URL}/drone/disconnected', json=query)
+        if response.status_code != 200: # Every HTTPException
+            print(f"Error: [{response.url}] with status code {response.status_code}")
+            print(f"Trying again...")
+            self.disconnected_drone(drone)
+    
+
+
 class Drone:
     def __init__(self, name, parent, host) -> None:
         self.name = name
         self.parent = parent
         self.host = host
+        self.video_port = None #NOTE: video_port for relay -> backend
+
+        self.get_ports()
+
+    def get_ports(self):
+        query = { 'name': self.name, 'parent': self.parent }
+        response = requests.get(f'{BACKEND_URL}/new_drone', json=query)
+        
+        if response.status_code != 200: # Every HTTPException
+            print(f"Error trying to get available port from URL [{response.url}] with status code {response.status_code}")
+            print(f"Trying again...")
+            self.get_ports()
+        
+        port = response.json().get('video_port')
+        print(f"[RES] Received port {port} for {self.name} on [{self.parent}]")
+        self.video_port = port
+
 
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
-    #relay.connect_to_backend()
-    #relay.heartbeat(relay.filter_scanned_drones)
+    relay.connect_to_backend()
     
-    relay.drones = {}
-    relay.filter_scanned_drones( [('192.168.137.200', '00:00:00:00:00')] ) #OK
-    sleep(2)
-    print("\n")
-    relay.filter_scanned_drones( [('192.168.137.200', '00:00:00:00:00'), ('192.168.137.133', '00:00:00:00:00')] ) #OK
-    sleep(2)
-    relay.filter_scanned_drones( [('192.168.137.133', '00:00:00:00:00')] )
-    sleep(2)
-    relay.filter_scanned_drones( [('192.168.137.200', '00:00:00:00:00'), ('192.168.137.133', '00:00:00:00:00')] ) 
-    relay.filter_scanned_drones( [('192.168.137.133', '00:00:00:00:00')] )
+    relay.filter_scanned_drones( [('192.168.137.134', 'ff:ff:ff:ff:ff:ff'), ('192.168.137.94', 'ff:ff:ff:ff:ff:ff')] )
 
+    sleep(3)
+    relay.filter_scanned_drones( [('192.168.137.130', 'ff:ff:ff:ff:ff:ff'), ('192.168.137.94', 'ff:ff:ff:ff:ff:ff')] )
+
+    sleep(3)
+    relay.filter_scanned_drones( [('192.168.137.130', 'ff:ff:ff:ff:ff:ff'), ('192.168.137.94', 'ff:ff:ff:ff:ff:ff'), ('192.168.137.320', 'ff:ff:ff:ff:ff:ff')] )
