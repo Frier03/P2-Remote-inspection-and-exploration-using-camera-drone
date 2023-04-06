@@ -1,16 +1,16 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 
 from routes.relay_routes import relay_router
 from routes.frontend_routes import frontend_router
 from middleware import middleware
-from mongodb_handler import MongoDB, get_mongo
+from mongodb_handler import MongoDB
 
 mongo = MongoDB()
 mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
 
 app = FastAPI()
 app.include_router(relay_router, prefix="/v1/api/relay")
-app.include_router(frontend_router, prefix="/v1/api/frontend", dependencies=[Depends(get_mongo)])
+app.include_router(frontend_router, prefix="/v1/api/frontend")
 
 app.middleware("http")(middleware)
 
