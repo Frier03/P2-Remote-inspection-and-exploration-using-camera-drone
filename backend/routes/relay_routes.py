@@ -5,6 +5,7 @@ from mongodb_handler import get_mongo
 from models import DroneModel, RelayHandshakeModel
 from relaybox import Relay
 
+# /v1/api/relay/drone/disconnecte
 relay_router = APIRouter()
 active_relays = {}
 
@@ -58,7 +59,7 @@ def handle(relay: RelayHandshakeModel):
     
     return result
 
-@relay_router.post("/new_drone")
+@relay_router.get("/new_drone")
 def handle(drone: DroneModel):
     # Check if drones parent (relay) is not online/exist
     if drone.parent not in active_relays.keys():
@@ -75,14 +76,11 @@ def handle(drone: DroneModel):
     # Find that relay object now
     relay = active_relays[drone.parent]
     
-    # Add new drone to relay and get available ports
-    ports = relay.add_drone(drone.name)
+    # Add new drone to relay and get available port
+    port = relay.add_drone(drone.name)
 
     #print(relay.drones[drone.name].name)
-    return { "ports": {
-        "status": ports[0],
-        "video": ports[1]
-    } }
+    return { "video_port": port }
     
 
 @relay_router.post("/handshake")
