@@ -26,11 +26,11 @@ class MongoDB:
             return
         return collection.find_one(name_dict)
     
-    def authenticate(self, subject: Union[UserModel, RelayHandshakeModel], mongo: object) -> bool:
+    def authenticate(self, subject: Union[UserModel, RelayHandshakeModel]) -> bool:
         if isinstance(subject, RelayHandshakeModel):
-            collection = mongo.relays_collection
+            collection = self.relays_collection
         elif isinstance(subject, UserModel):
-            collection = mongo.users_collection
+            collection = self.users_collection
 
         query = { 'name': subject.name }
         subject_exist = collection.find_one(query)
