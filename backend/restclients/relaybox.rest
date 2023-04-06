@@ -1,41 +1,41 @@
 # Download CLIENT Rest from VS code to use this file
 
-POST http://localhost:8000/v1/auth/relay/handshake
+POST http://localhost:8000/v1/api/relay/handshake
 Content-Type: application/json
 
 {
-    "name": "relay_0001",
+    "name": "relay_0002",
     "password": "123"
 }
 
 ###
 
-POST http://localhost:8000/v1/auth/relay/new_drone
+POST http://localhost:8000/v1/api/relay/new_drone
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
 Content-Type: application/json
 
 {
     "name": "drone_01",
-    "parent": "relay_0001"
+    "parent": "relay_0002"
 }
 
 ###
 
-POST http://localhost:8000/v1/auth/relay/drones
+POST http://localhost:8000/v1/api/relay/drones
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
 Content-Type: application/json
 
 {
-    "name": "relay_0001"
+    "name": "relay_0002"
 }
 
 ###
-POST http://localhost:8000/v1/auth/relays
+POST http://localhost:8000/v1/api/relay
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
 
 ###
 
-POST http://localhost:8000/v1/auth/relay/drone/disconnected
+POST http://localhost:8000/v1/api/relay/drone/disconnected
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
 Content-Type: application/json
 
