@@ -15,7 +15,7 @@ class Relay:
         for relay in self.active_relays.values():
             for drone in relay.drones.values():
                 used_ports.update(drone.ports.values())
-        print(used_ports)
+
         for port in range(2222, 3334):
             if port not in used_ports:
                 video_port = port

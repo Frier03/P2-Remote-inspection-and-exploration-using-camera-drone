@@ -4,19 +4,19 @@ POST http://localhost:8000/v1/api/relay/handshake
 Content-Type: application/json
 
 {
-    "name": "relay_0002",
+    "name": "relay_0001",
     "password": "123"
 }
 
 ###
 
-POST http://localhost:8000/v1/api/relay/new_drone
+GET http://localhost:8000/v1/api/relay/new_drone
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
 Content-Type: application/json
 
 {
-    "name": "drone_01",
-    "parent": "relay_0002"
+    "name": "drone_03",
+    "parent": "relay_0001"
 }
 
 ###
@@ -35,6 +35,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wM
 
 ###
 
+GET http://localhost:8000/v1/api/relay/heartbeat
+Content-Type: application/json
+
+{
+    "name": "relay_0001"
+}
+
+###
 POST http://localhost:8000/v1/api/relay/drone/disconnected
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
 Content-Type: application/json
