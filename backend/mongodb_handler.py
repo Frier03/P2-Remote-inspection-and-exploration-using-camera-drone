@@ -2,6 +2,13 @@ import pymongo, certifi
 from typing import Union
 from bson.objectid import ObjectId
 
+def set_mongo(object):
+    global mongo
+    mongo = object
+
+def get_mongo():
+    return mongo
+
 class MongoDB:
     def __init__(self) -> None:
         self.client: object = None
@@ -16,7 +23,7 @@ class MongoDB:
         database = self.client.get_database('Backend')
         self.users_collection = database.get_collection('Users')
         self.relays_collection = database.get_collection('Relays')
-        
+        set_mongo(self)
         
     def name_exist(self, name_dict: dict[str, str], collection: object) -> Union[dict, None]:
         if len(name_dict) > 1 or len(name_dict) == 0: #NOTE: dict must only have one key-val pair 
@@ -27,8 +34,8 @@ class MongoDB:
     
     
 if __name__ == '__main__':
-    mongo = MongoDB()
-    mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
+    #mongo = MongoDB()
+    #mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
     
-    user = mongo.user_exist({ 'name': 'JohnWick' })
-    print(user)
+    #user = mongo.name_exist({ 'name': 'JohnWick' }, mongo.users_collection)
+    print("Hello World")
