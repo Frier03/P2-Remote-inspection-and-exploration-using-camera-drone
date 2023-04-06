@@ -87,7 +87,7 @@ def handle(drone: DroneModel):
 
 @relay_router.post("/handshake")
 def handle(relay: RelayHandshakeModel, mongo: object = Depends(get_mongo)):
-    if not mongo.authenticate(relay, mongo):
+    if not mongo.authenticate(relay):
          raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED)
 

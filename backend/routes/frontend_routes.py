@@ -16,7 +16,7 @@ async def handle():
 
 @frontend_router.post("/login")
 async def handle(user: UserModel, mongo: object = Depends(get_mongo)):
-    if not mongo.authenticate(user, mongo):
+    if not mongo.authenticate(user):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
