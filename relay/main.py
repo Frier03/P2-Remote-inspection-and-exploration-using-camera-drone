@@ -102,8 +102,6 @@ class Relaybox:
         drone_thread = threading.Thread(target=drone.start, args=())
         drone_thread.start()
 
-
-
     def delete_drone(self, name) -> None:
         object = self.drones[name].get('objectId')
         del object
@@ -163,6 +161,29 @@ class Drone:
         print('DONE', flush=True)
         print()
 
+        for i in range(1, 4): # start 3 threads
+            # [1] video feed (drone -> relay) (UDP)
+            # [2] status (backend -> relay -> drone) (API)
+            # [3] rc cmds (backend -> relay -> drone) (API)
+            print(f"[{self.name}] Starting thread {i}")
+
+            sleep(1)
+
+    def status_thread(self):
+        # Ask drone for status [battery, yaw, altitude...]
+        # Send collected status to API
+        ...
+
+    def rc_thread(self):
+        # Ask API for rc cmds on this drone using drone name and relay name
+        # Send collected rc cmds to drone
+        ...
+
+    def video_thread(self):
+        while True:
+            video_feed = self.socket.recvfrom(self.default_buffer_size)
+
+            # Do something with the video feed
 
     def get_video_port(self):
         query = { 'name': self.name, 'parent': self.parent }
@@ -186,12 +207,6 @@ class Drone:
 
     def enable_streamon(self):
         self.send_control_command(self.socket, "streamon")
-
-    def get_video_feed(self):
-        while True:
-            video_feed = self.socket.recvfrom(self.default_buffer_size)
-
-            # Do something with the video feed
         
     def send_control_command(self, socket: object, command: str, buffer_size: int) -> str:
         socket.sendto(bytes(command, 'utf-8'), (self.host, self.default_drone_port))
