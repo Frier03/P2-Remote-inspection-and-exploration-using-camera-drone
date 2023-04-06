@@ -5,6 +5,7 @@ import threading
 from time import sleep
 
 BACKEND_URL = 'http://localhost:8000/v1/api/relay' # https://example.com/
+ALLOWED_DRONES = ['60:60:1f:5b:4b:ea', '60:60:1f:5b:4b:d8']
 
 class Relaybox:
     def __init__(self, name, password) -> None:
@@ -36,9 +37,19 @@ class Relaybox:
     def scan_for_drone(self, callback) -> None: # THREAD!
         while True:
             regex = r"""(192\.168\.137\.[0-9]{0,3}) *([0-9a-z-]*)""" #-Bjørn
-            output = subprocess.check_output(['arp', '-a'])
+            output = str(subprocess.check_output(['arp', '-a']))
             output = output.replace(" \r","")
             scanned_drones = re.findall(regex, output) # [(192.168.137.xxx, 00:00:00:00:00:00), ...] 
+
+            for drone in scanned_drones:
+                mac = drone[1]
+                if (mac == "---") or (mac == "ff-ff-ff-ff-ff-ff"):
+                    scanned_drones.remove(drone)
+             
+                if drone[0] not in ALLOWED_DRONES:
+                    scanned_drones.remove(drone)
+
+            print(scanned_drones)
             callback(scanned_drones)
             sleep(0.5)
     
@@ -91,7 +102,7 @@ class Relaybox:
     
     def heartbeat(self, callback) -> None:
         print("Started heartbeat...")
-        scan_for_drone_thread = threading.Thread(target=scan_for_drone_thread, args=(callback,))
+        scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(callback,))
         scan_for_drone_thread.run()
 
     def disconnected_drone(self, drone: object) -> None:
