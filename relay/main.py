@@ -14,7 +14,13 @@ class Relaybox:
         self.password = password
         self.drones = {}
         self.token = None
-        self.response_time = None
+        
+        #----# Heartbeat variables #----#
+        self.session = requests.Session()
+        self.heartbeat_url = f"{BACKEND_URL}/heartbeat"
+        self.heartbeat_timeout = 5.0 # session timeout (seconds)
+        self.heartbeat_interval = 2 # loop interval (seconds)
+        self.heartbeat_response_time = 0
     
     def connect_to_backend(self) -> None:
         try:
@@ -31,6 +37,34 @@ class Relaybox:
             print("(!) Connected to backend")
         except Exception:
             print(f"Error trying to connect to backend")
+            
+    def start(self) -> None:
+        print("[THREAD] Scanning for drones...")
+        scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(self.filter_scanned_drones,))
+        scan_for_drone_thread.start()
+        self.heartbeat() # Call heartbeat
+
+    def heartbeat(self):
+        while True:
+            print("[THREAD] Sending heartbeat...")
+            start_time = time()
+            try:
+                query = {"name": self.name}
+                response = self.session.get(self.heartbeat_url, json=query, timeout=self.heartbeat_timeout).json()
+            except requests.exceptions.Timeout:
+                print("[THREAD] Request timed out")
+                continue
+            except requests.exceptions.RequestException as e:
+                print(f"[THREAD] Request failed: {e}")
+                continue
+            end_time = time()
+            self.heartbeat_response_time = end_time - start_time
+            print(f"[THREAD] Heartbeat response: {response}")
+            print(f"[THREAD] Heartbeat response time: {self.heartbeat_response_time:.2f} seconds")
+            
+            #TODO: Check if response data (data from backend) is up to date with this data on here
+            
+            sleep(self.heartbeat_interval)
     
     def scan_for_drone(self, callback) -> None: # THREAD!
         while True:
@@ -102,33 +136,6 @@ class Relaybox:
         object = self.drones[name].get('objectId')
         del object
         self.drones.pop(name)
-    
-    def start(self) -> None:
-        print("[THREAD] Scanning for drones...")
-        scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(self.filter_scanned_drones,))
-        scan_for_drone_thread.start()
-        self.heartbeat() # Call heartbeat
-
-    def heartbeat(self):
-        session = requests.Session()
-        url = "http://localhost:8000/v1/api/relay/heartbeat"
-        timeout = 5.0
-        query = {"name": self.name}
-        while True:
-            print("[THREAD] Sending heartbeat...")
-            start_time = time()
-            try:
-                response = session.get(url, json=query, timeout=timeout).json()
-            except requests.exceptions.Timeout:
-                print("[THREAD] Request timed out")
-                continue
-            except requests.exceptions.RequestException as e:
-                print(f"[THREAD] Request failed: {e}")
-                continue
-            end_time = time()
-            self.response_time = end_time - start_time
-            print(f"[THREAD] Heartbeat response: {response.get('message')}")
-            print(f"[THREAD] Heartbeat response time: {self.response_time:.2f} seconds")
 
     def disconnected_drone(self, drone: object) -> None:
         query = { 'name': drone.name, 'parent': drone.parent }
