@@ -5,10 +5,12 @@ from bson.objectid import ObjectId
 class MongoDB:
     def __init__(self) -> None:
         self.client: object = None
+        self.name = None
         self.users_collection: object = None
         self.relays_collection: object = None
         
-    def connect(self, mongodb_username: str, mongodb_password: str):
+    def connect(self, mongodb_username: str, mongodb_password: str, name: str):
+        self.name = name
         certify = certifi.where() # NOTE: some reason, not all users can connect without this
         connection_url = f"mongodb+srv://{mongodb_username}:{mongodb_password}@cluster.eoaspgc.mongodb.net/?retryWrites=true&w=majority" 
 
@@ -30,5 +32,5 @@ if __name__ == '__main__':
     mongo = MongoDB()
     mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
     
-    user = mongo.user_exist({ 'name': 'JohnWick' })
+    user = mongo.name_exist({ 'name': 'JohnWick' }, mongo.users_collection)
     print(user)
