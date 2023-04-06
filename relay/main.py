@@ -166,6 +166,12 @@ class Drone:
             # [2] status (backend -> relay -> drone) (API)
             # [3] rc cmds (backend -> relay -> drone) (API)
             print(f"[{self.name}] Starting thread {i}")
+            if i is 1:
+                self.video_thread()
+            elif i is 2:
+                self.status_thread()
+            else:
+                self.rc_thread()
 
             sleep(1)
 
