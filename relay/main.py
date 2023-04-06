@@ -25,6 +25,7 @@ class Relaybox:
 
             token = response.json().get('access_token')
             self.token = token
+            print("(!) Connected to backend")
         except Exception:
             print(f"Error trying to connect to backend")
 
@@ -89,6 +90,7 @@ class Relaybox:
         self.drones.pop(name)
     
     def heartbeat(self, callback) -> None:
+        print("Started heartbeat...")
         scan_for_drone_thread = threading.Thread(target=scan_for_drone_thread, args=(callback,))
         scan_for_drone_thread.run()
 
@@ -128,11 +130,4 @@ class Drone:
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
     relay.connect_to_backend()
-    
-    relay.filter_scanned_drones( [('192.168.137.134', 'ff:ff:ff:ff:ff:ff'), ('192.168.137.94', 'ff:ff:ff:ff:ff:ff')] )
-
-    sleep(3)
-    relay.filter_scanned_drones( [('192.168.137.130', 'ff:ff:ff:ff:ff:ff'), ('192.168.137.94', 'ff:ff:ff:ff:ff:ff')] )
-
-    sleep(3)
-    relay.filter_scanned_drones( [('192.168.137.130', 'ff:ff:ff:ff:ff:ff'), ('192.168.137.94', 'ff:ff:ff:ff:ff:ff'), ('192.168.137.320', 'ff:ff:ff:ff:ff:ff')] )
+    relay.heartbeat(relay.filter_scanned_drones)
