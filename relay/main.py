@@ -37,35 +37,59 @@ class Relaybox:
             print("(!) Connected to backend")
         except Exception:
             print(f"Error trying to connect to backend")
+            sleep(2)
+            print(f"Trying again...")
+            self.connect_to_backend()
             
     def start(self) -> None:
         print("[THREAD] Scanning for drones...")
         scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(self.filter_scanned_drones,))
-        scan_for_drone_thread.start()
-        self.heartbeat() # Call heartbeat
+        #scan_for_drone_thread.start()
+        
+        heartbeat_thread = threading.Thread(target=self.heartbeat, args=())
+        heartbeat_thread.start()
 
     def heartbeat(self):
         while True:
-            print("[THREAD] Sending heartbeat...")
             start_time = time()
             try:
                 query = {"name": self.name}
                 response = self.session.get(self.heartbeat_url, json=query, timeout=self.heartbeat_timeout).json()
             except requests.exceptions.Timeout:
-                print("[THREAD] Request timed out")
+                print("[THREAD] Heartbeat timed out")
                 continue
-            except requests.exceptions.RequestException as e:
-                print(f"[THREAD] Request failed: {e}")
+            except requests.exceptions.RequestException:
+                print(f"[THREAD] Heartbeat failed")
                 continue
             end_time = time()
             self.heartbeat_response_time = end_time - start_time
-            print(f"[THREAD] Heartbeat response: {response}")
-            print(f"[THREAD] Heartbeat response time: {self.heartbeat_response_time:.2f} seconds")
-            
-            #TODO: Check if response data (data from backend) is up to date with this data on here
-            
+            backend_data_status = self.backend_data_up_to_date(response) # Check if backend data is up to date with the data we have here
+
+            print(f"""
+            --------------------------[THREAD: Heartbeat]--------------------------
+            - Data status: {backend_data_status}
+            - Response time: {self.heartbeat_response_time:.3f} seconds\n
+            """)
             sleep(self.heartbeat_interval)
     
+    def backend_data_up_to_date(self, response):
+        up_to_date = True
+        for drone_name, drone_data in self.drones.items():
+            drone = drone_data['objectId']
+            backend_drone_data = response.get(self.name, {}).get('drones', {}).get(drone_name, {})
+            if backend_drone_data == {'name': drone.name, 'ports': {'video': drone.video_port}}:
+                pass
+            else:
+                up_to_date = False
+        for backend_drone_name, backend_drone_data in response.get(self.name, {}).get('drones', {}).items():
+            if backend_drone_name not in self.drones:
+                up_to_date = False
+
+        if up_to_date:
+            return(f"Backend data is up to date for {self.name}")
+        else:
+            return(f"Backend data is NOT up to date for {self.name}")
+
     def scan_for_drone(self, callback) -> None: # THREAD!
         while True:
             regex = r"""(192\.168\.137\.[0-9]{0,3}) *([0-9a-z-]*)""" #-Bjørn
@@ -238,6 +262,8 @@ if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
     relay.connect_to_backend()
     relay.start()
+
+    relay.filter_scanned_drones( [('192.168.1.130', '00:00:00:00:00')] )
 
     #drone = Drone("drone_01", "relay_0001", "192.168.1.154")
     #drone.start()
