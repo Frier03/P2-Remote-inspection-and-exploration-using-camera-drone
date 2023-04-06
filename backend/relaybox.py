@@ -1,10 +1,7 @@
 class Drone:
     def __init__(self, name):
         self.name = name
-        self.ports = {
-            "status": None,
-            "video": None
-        }
+        self.ports = { "video": None }
 
 class Relay:
     def __init__(self, name, active_relays) -> None:
@@ -19,21 +16,22 @@ class Relay:
             for drone in relay.drones.values():
                 used_ports.update(drone.ports.values())
         print(used_ports)
-        for port in range(2222, 3334, 2):
+        for port in range(2222, 3334):
             if port not in used_ports:
-                status_port = port
-                video_port = port + 1
+                video_port = port
                 break
         else:
             raise ValueError("All available ports are taken.")
 
         # Create new Drone instance
         drone = Drone(name)
-        drone.ports["status"] = status_port
         drone.ports["video"] = video_port
         self.drones[name] = drone
 
-        return status_port, video_port
+        return video_port
+    
+    def delete_drone(self, name):
+        pass
 
 
 
