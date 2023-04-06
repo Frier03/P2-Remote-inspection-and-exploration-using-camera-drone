@@ -27,3 +27,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool: #TODO Ma
     if len(plain_password) < 3:
         return False
     return pwd_context.verify(plain_password, hashed_password) # True/False depends if both hashes passwords matches
+
+def is_user_authorized(access_token: str, blacklisted_tokens: dict[datetime, str]) -> bool:
+    try:
+        # Decode access token
+        payload = decode_access_token(access_token)
+
+        # Decode username from payload
+        username = payload.get('sub')
+
+        if username is None or access_token in blacklisted_tokens:
+            return False
+        return True
+    except (JWTError, AttributeError):
+        return False
