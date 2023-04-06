@@ -5,7 +5,7 @@ import threading
 from time import sleep
 
 BACKEND_URL = 'http://localhost:8000/v1/api/relay' # https://example.com/
-ALLOWED_DRONES = ['60:60:1f:5b:4b:ea', '60:60:1f:5b:4b:d8']
+ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78']
 
 class Relaybox:
     def __init__(self, name, password) -> None:
@@ -41,17 +41,20 @@ class Relaybox:
             output = output.replace(" \r","")
             scanned_drones = re.findall(regex, output) # [(192.168.137.xxx, 00:00:00:00:00:00), ...] 
 
-            for drone in scanned_drones:
-                mac = drone[1]
-                if (mac == "---") or (mac == "ff-ff-ff-ff-ff-ff"):
+            for drone in scanned_drones[:]:
+                if drone[1] not in ALLOWED_DRONES:
                     scanned_drones.remove(drone)
-             
-                if drone[0] not in ALLOWED_DRONES:
+            
+            for drone in scanned_drones[:]:
+                cmd = f"ping -w 100 -n 2 {drone[0]}" 
+                pinging = str(subprocess.run(cmd, capture_output=True))
+                pinging = pinging.replace(" \r","")
+
+                if "Received = 0" in pinging:
                     scanned_drones.remove(drone)
 
             print(scanned_drones)
             callback(scanned_drones)
-            sleep(0.5)
     
     def filter_scanned_drones(self, scanned_drones):
         # Check for connected drone
@@ -113,7 +116,7 @@ class Relaybox:
             print(f"Trying again...")
             self.disconnected_drone(drone)
     
-
+        
 
 class Drone:
     def __init__(self, name, parent, host) -> None:
@@ -136,6 +139,10 @@ class Drone:
         port = response.json().get('video_port')
         print(f"[RES] Received port {port} for {self.name} on [{self.parent}]")
         self.video_port = port
+
+    def set_drone_video_port(self):
+        ...
+
 
 
 if __name__ == '__main__':
