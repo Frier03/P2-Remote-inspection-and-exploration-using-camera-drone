@@ -1,15 +1,13 @@
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
-from pydantic import BaseModel
-
 from os import getenv
+from passlib.context import CryptContext
+
+from models import TokenModel
 
 SECRET_KEY = str(getenv('SECRET_KEY'))
-
-class TokenModel(BaseModel):
-    access_token: str
-    token_type: str
+pwd_context = CryptContext(schemes=["bcrypt_sha256"])
 
 def generate_access_token(data: dict, minutes: int) -> TokenModel:
     to_encode = data.copy()
@@ -23,3 +21,9 @@ def decode_access_token(encoded_jwt: str):
         return jwt.decode(encoded_jwt, SECRET_KEY, algorithms=["HS256"])
     except JWTError:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=JWTError)
+    
+def verify_password(plain_password: str, hashed_password: str) -> bool: #TODO Make this more secure
+    # Placeholder for validating the password
+    if len(plain_password) < 3:
+        return False
+    return pwd_context.verify(plain_password, hashed_password) # True/False depends if both hashes passwords matches
