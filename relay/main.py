@@ -2,6 +2,7 @@ import requests
 import subprocess
 import re
 import threading
+import socket
 from time import sleep
 
 BACKEND_URL = 'http://localhost:8000/v1/api/relay' # https://example.com/
@@ -98,6 +99,11 @@ class Relaybox:
         drone = Drone(name=drone_name, parent=self.name, host=host)
         self.drones[drone_name] = { "Ip": host, "objectId": drone }
 
+        drone_thread = threading.Thread(target=drone.start, args=())
+        drone_thread.start()
+
+
+
     def delete_drone(self, name) -> None:
         object = self.drones[name].get('objectId')
         del object
@@ -125,7 +131,12 @@ class Drone:
         self.host = host
         self.video_port = None #NOTE: video_port for relay -> backend
 
+    
+    def start(self):
+        print(f"Starting {self.name}")
         self.get_ports()
+        self.set_drone_video_port()
+
 
     def get_ports(self):
         query = { 'name': self.name, 'parent': self.parent }
@@ -141,7 +152,33 @@ class Drone:
         self.video_port = port
 
     def set_drone_video_port(self):
-        ...
+        drone_video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        drone_video_socket.bind(('0.0.0.0', self.video_port))
+
+        # initialize SDK mode
+        command_set = self.send_control_command(drone_video_socket, "command", self.host, 8889, 2048)
+        print(command_set)
+
+        set_ports = self.send_control_command(drone_video_socket, f"port 8889 {self.video_port}", self.host, 8889, 2048)
+        print(set_ports)
+
+        stream_on = self.send_control_command(drone_video_socket, "streamon", self.host, 8889, 2048)
+        print(stream_on)
+
+        while True:
+            feed = drone_video_socket.recvfrom(2048)
+            print(feed, "port", self.video_port)
+            sleep(3)
+        
+
+    def send_control_command(self, socket: object, command: str, ip: str, port: int, buffer_size: int) -> str:
+        socket.sendto(bytes(command, 'utf-8'), (ip, port))
+        drone_response = socket.recvfrom(buffer_size)
+        return drone_response
+
+
+
+
 
 
 
