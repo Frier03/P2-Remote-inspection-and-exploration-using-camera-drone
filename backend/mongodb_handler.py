@@ -1,13 +1,7 @@
 import pymongo, certifi
 from typing import Union
-from bson.objectid import ObjectId
-
-def set_mongo(object):
-    global mongo
-    mongo = object
-
-def get_mongo():
-    return mongo
+from helper_functions import verify_password
+from models import RelayHandshakeModel, UserModel
 
 class MongoDB:
     def __init__(self) -> None:
@@ -32,10 +26,31 @@ class MongoDB:
             return
         return collection.find_one(name_dict)
     
-    
+    def authenticate(self, subject: Union[UserModel, RelayHandshakeModel], mongo: object) -> bool:
+        if isinstance(subject, RelayHandshakeModel):
+            collection = mongo.relays_collection
+        elif isinstance(subject, UserModel):
+            collection = mongo.users_collection
+
+        query = { 'name': subject.name }
+        subject_exist = collection.find_one(query)
+
+        if not subject_exist:
+            return False
+        if not verify_password(subject.password, subject_exist.get('hashed_password')):
+            return False
+        return True
+
+# Essential when working with Dependencies in main.py @ relay_router and frontend_router 
+def set_mongo(object):
+    global mongo
+    mongo = object
+def get_mongo():
+    return mongo
+
 if __name__ == '__main__':
-    #mongo = MongoDB()
-    #mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
+    mongo = MongoDB()
+    mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
     
-    #user = mongo.name_exist({ 'name': 'JohnWick' }, mongo.users_collection)
+    user = mongo.name_exist({ 'name': 'JohnWick' }, mongo.users_collection)
     print("Hello World")
