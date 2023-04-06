@@ -129,55 +129,78 @@ class Drone:
         self.name = name
         self.parent = parent
         self.host = host
+        self.default_drone_port = 8889 
         self.video_port = None #NOTE: video_port for relay -> backend
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.default_buffer_size = 2048
 
     
     def start(self):
-        print(f"Starting {self.name}")
-        self.get_ports()
-        self.set_drone_video_port()
+        print(f"Starting {self.name} on {self.parent}")
+
+        print(f"[{self.name}] Getting available video ports from backend...", end=' ', flush=True)
+        #self.get_video_port()
+        self.video_port = 2222 # placeholder for testing purposes
+        sleep(3)
+        print('DONE', flush=True)
+        print()
+
+        print(f"[{self.name}] Entering SDK mode...", end=' ', flush=True)
+        #self.set_drone_sdk()
+        sleep(3)
+        print('DONE', flush=True)
+        print()
+
+        print(f"[{self.name}] Telling drone to use port {self.video_port} for streamon...", end=' ', flush=True)
+        #self.set_drone_streamon_port()
+        sleep(3)
+        print('DONE', flush=True)
+        print()
+
+        print(f"[{self.name}] Enabling streamon...", end=' ', flush=True)
+        #self.enable_streamon()
+        sleep(3)
+        print('DONE', flush=True)
+        print()
 
 
-    def get_ports(self):
+    def get_video_port(self):
         query = { 'name': self.name, 'parent': self.parent }
         response = requests.get(f'{BACKEND_URL}/new_drone', json=query)
         
         if response.status_code != 200: # Every HTTPException
             print(f"Error trying to get available port from URL [{response.url}] with status code {response.status_code}")
             print(f"Trying again...")
-            self.get_ports()
+            self.get_video_port()
         
         port = response.json().get('video_port')
         print(f"[RES] Received port {port} for {self.name} on [{self.parent}]")
         self.video_port = port
 
-    def set_drone_video_port(self):
-        drone_video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        drone_video_socket.bind(('0.0.0.0', self.video_port))
+    def set_drone_sdk(self):
+        self.send_control_command(self.socket, f"command")
 
-        # initialize SDK mode
-        command_set = self.send_control_command(drone_video_socket, "command", self.host, 8889, 2048)
-        print(command_set)
+    def set_drone_streamon_port(self):
+        self.socket.bind(('0.0.0.0', self.video_port))
+        self.send_control_command(self.socket, f"port {self.default_drone_port} {self.video_port}", self.default_buffer_size)
 
-        set_ports = self.send_control_command(drone_video_socket, f"port 8889 {self.video_port}", self.host, 8889, 2048)
-        print(set_ports)
+    def enable_streamon(self):
+        self.send_control_command(self.socket, "streamon")
 
-        stream_on = self.send_control_command(drone_video_socket, "streamon", self.host, 8889, 2048)
-        print(stream_on)
-
+    def get_video_feed(self):
         while True:
-            # Receive feed
-            feed = drone_video_socket.recvfrom(2048)
+            video_feed = self.socket.recvfrom(self.default_buffer_size)
 
-            # Replace with code sending the feed to the backend via udp.
-            print(feed, "port", self.video_port)
+            # Do something with the video feed
         
-    def send_control_command(self, socket: object, command: str, ip: str, port: int, buffer_size: int) -> str:
-        socket.sendto(bytes(command, 'utf-8'), (ip, port))
-        drone_response = socket.recvfrom(buffer_size)
-        return drone_response
+    def send_control_command(self, socket: object, command: str, buffer_size: int) -> str:
+        socket.sendto(bytes(command, 'utf-8'), (self.host, self.default_drone_port))
+        res = socket.recvfrom(buffer_size)
+        return res
     
 if __name__ == '__main__':
-    relay = Relaybox("relay_0001", "123")
-    relay.connect_to_backend()
-    relay.heartbeat(relay.filter_scanned_drones)
+    #relay = Relaybox("relay_0001", "123")
+    #relay.connect_to_backend()
+    #relay.heartbeat(relay.filter_scanned_drones)
+    drone = Drone("drone_01", "relay_0001", "192.168.1.154")
+    drone.start()
