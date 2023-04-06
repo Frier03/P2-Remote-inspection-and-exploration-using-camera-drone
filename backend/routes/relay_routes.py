@@ -20,7 +20,10 @@ def handle():
 @relay_router.get("/heartbeat")
 def handle(relay: RelayHandshakeModel):
     print(f"(!) Heartbeat from {relay.name}")
-    return { "message": "Hello" }
+    print(f"(!) Retrieving all data related to {relay.name}")
+    
+    data = active_relays.get(relay.name)
+    return { "message": f"Hello {relay.name}", f"{relay.name}": { "drones": data.drones } }
 
 @relay_router.post("/drone/disconnected")
 def handle(drone: DroneModel):
