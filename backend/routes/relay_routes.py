@@ -5,7 +5,6 @@ from mongodb_handler import get_mongo
 from models import DroneModel, RelayHandshakeModel
 from relaybox import Relay
 
-# /v1/api/relay/drone/disconnecte
 relay_router = APIRouter()
 active_relays = {}
 
@@ -14,9 +13,14 @@ def handle():
     result = {}
     for relay_key in active_relays.keys():
         relay = active_relays[relay_key]
-        result[relay_key] = { "name": relay.name, "drones": relay.drones }
+        result[relay_key] = { "drones": relay.drones }
         
     return result
+
+@relay_router.get("/heartbeat")
+def handle(relay: RelayHandshakeModel):
+    print(f"(!) Heartbeat from {relay.name}")
+    return { "message": "Hello" }
 
 @relay_router.post("/drone/disconnected")
 def handle(drone: DroneModel):
