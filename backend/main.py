@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends
 from routes.relay_routes import relay_router
 from routes.frontend_routes import frontend_router
 from middleware import middleware
-from mongodb_handler import MongoDB, set_mongo, get_mongo
+from mongodb_handler import MongoDB, get_mongo
 
 mongo = MongoDB()
 mongo.connect(mongodb_username="admin", mongodb_password="kmEuqHYeiWydyKpc")
