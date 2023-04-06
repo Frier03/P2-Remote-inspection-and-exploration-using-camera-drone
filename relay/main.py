@@ -166,22 +166,17 @@ class Drone:
         print(stream_on)
 
         while True:
+            # Receive feed
             feed = drone_video_socket.recvfrom(2048)
-            print(feed, "port", self.video_port)
-            sleep(3)
-        
 
+            # Replace with code sending the feed to the backend via udp.
+            print(feed, "port", self.video_port)
+        
     def send_control_command(self, socket: object, command: str, ip: str, port: int, buffer_size: int) -> str:
         socket.sendto(bytes(command, 'utf-8'), (ip, port))
         drone_response = socket.recvfrom(buffer_size)
         return drone_response
-
-
-
-
-
-
-
+    
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
     relay.connect_to_backend()
