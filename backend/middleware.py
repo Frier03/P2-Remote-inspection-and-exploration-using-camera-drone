@@ -1,10 +1,9 @@
 from fastapi import Request
 from datetime import datetime, timedelta
 from fastapi import Request
-from jose import JWTError
 
 from starlette.responses import HTMLResponse as starletteHTMLResponse 
-from helper_functions import generate_access_token, decode_access_token
+from helper_functions import generate_access_token, decode_access_token, is_user_authorized
 
 routes_with_authorization = [
     "/v1/api/frontend/protected",
@@ -36,7 +35,7 @@ async def middleware(request: Request, call_next):
         return starletteHTMLResponse(status_code=401)
     
     # Is user not authorized with this access token
-    if not is_user_authorized(access_token):
+    if not is_user_authorized(access_token, blacklisted_tokens):
         return starletteHTMLResponse(status_code=401)
     
     # Await endpoint
@@ -61,18 +60,3 @@ async def middleware(request: Request, call_next):
     blacklisted_tokens[expire] = access_token
 
     return response
-
-
-def is_user_authorized(access_token: str) -> bool:
-    try:
-        # Decode access token
-        payload = decode_access_token(access_token)
-
-        # Decode username from payload
-        username = payload.get('sub')
-
-        if username is None or access_token in blacklisted_tokens:
-            return False
-        return True
-    except (JWTError, AttributeError):
-        return False
