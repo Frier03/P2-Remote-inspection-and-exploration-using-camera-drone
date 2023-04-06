@@ -4,7 +4,7 @@ from fastapi import Request
 from jose import JWTError
 
 from starlette.responses import HTMLResponse as starletteHTMLResponse 
-from token_helper_functions import generate_access_token, decode_access_token
+from helper_functions import generate_access_token, decode_access_token
 
 routes_with_authorization = [
     "/v1/api/frontend/protected",
