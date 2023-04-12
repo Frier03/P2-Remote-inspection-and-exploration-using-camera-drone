@@ -25,10 +25,10 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsI
 
 ###
 
-PUT http://localhost:8000/v1/auth/login/relay
+POST http://localhost:8000/v1/auth/login/relay
 Content-Type: application/json
 
 {
-    "id": "554",
+    "id": 554,
     "key": "nigga"
 }
