@@ -11,7 +11,7 @@ ENCODING = 'utf-8'
 local_address = (HOST, PORT)
 
 #Tello drone IP and port
-tello_address = ('192.168.10.1', 8889)
+tello_address = ('192.168.137.245', 8889)
 
 #Backend Server
 backend_address = ('89.150.129.29', 6969)
@@ -26,6 +26,10 @@ def send_command(command):
     except Exception as e:
         print(f"Error Sending Command: {e}")
 
+# Send commands to Tello drone
+send_command('command')  # Initialize SDK mode
+send_command('port 8889 2003')
+
 def receive_response():
     while True:
         try:
@@ -37,7 +41,7 @@ def receive_response():
 
 def video_receiver():
     #Create Capture Object
-    cap = cv2.VideoCapture('udp://0.0.0.0:11111')
+    cap = cv2.VideoCapture('udp://0.0.0.0:2003')
 
     while True:
         #Read a frame from the video stream
@@ -65,8 +69,7 @@ video_thread = threading.Thread(target=video_receiver)
 response_thread.start()
 video_thread.start()
 
-# Send commands to Tello drone
-send_command('command')  # Initialize SDK mode
+
 send_command('streamon')  # Start video stream
 
 def on_press(key):
@@ -74,7 +77,8 @@ def on_press(key):
     altitude = 50
     try:
         if key.char == 't':
-            send_command('takeoff')
+            1+1
+            #send_command('takeoff')
         elif key.char == 'l':
             send_command('land')
         elif key.char == 'w':

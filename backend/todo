@@ -1,7 +1,0 @@
-1. Role-Based Access Control: Implement a system where different users have different roles and permissions within the system. For example, an admin user may have more access than a regular user.
-2. Two-Factor Authentication: Add an extra layer of security to the login process by requiring users to enter a code from a separate device or application.
-3. Rate Limiting: Limit the number of requests a user can make in a given time period to prevent abuse and protect against denial-of-service attacks.
-4. Audit Logging: Keep track of user actions and API requests in a log file to help with debugging, compliance, and security.
-5. IP Address Whitelisting: Restrict access to the API to specific IP addresses to prevent unauthorized access.
-6. Geolocation-Based Access: Implement access control based on the user's geolocation to prevent unauthorized access from different regions or countries.
-7. Webhooks: Provide a way for your API to send notifications to other services when certain events occur, such as when a drone is activated or deactivated.
