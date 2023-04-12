@@ -191,7 +191,7 @@ class Drone:
         print()
 
         print(f"[{self.name}] Entering SDK mode...", end=' ', flush=True)
-        #self.set_drone_sdk()
+        self.send_control_command(self.socket, f"command")
         print('DONE', flush=True)
         print()
 
@@ -201,17 +201,17 @@ class Drone:
         print()
 
         print(f"[{self.name}] Enabling streamon...", end=' ', flush=True)
-        #self.enable_streamon()
+        self.send_control_command(self.socket, "streamon")
         print('DONE', flush=True)
         print()
 
 
         print(f"[{self.name}] Starting video thread")
-        #self.video_thread()
+        vidthread = threading.Thread(target=self.video_thread()).start()
         print(f"[{self.name}] Starting status thread")
-        #self.status_thread()
+        statthread = threading.Thread(target=self.status_thread()).start()
         print(f"[{self.name}] Starting rc thread")
-        #self.rc_thread()
+        commandthread = threading.Thread(target=self.rc_thread()).start()
 
         sleep(1)
 
@@ -227,7 +227,11 @@ class Drone:
 
     def video_thread(self):
         while True:
-            video_feed = self.socket.recvfrom(self.default_buffer_size)
+            try:
+                video_feed = self.socket.recvfrom(self.default_buffer_size)
+                self.socket.sendto(video_feed, f"IP:{self.video_port}") #REPLACE IP WITH BACKEND IP
+            except Exception as e:
+                print(f"Could not send video feed to backend {e}")
 
             # Do something with the video feed
 
@@ -243,15 +247,9 @@ class Drone:
         port = response.json().get('video_port')
         self.video_port = port
 
-    def set_drone_sdk(self):
-        self.send_control_command(self.socket, f"command")
-
     def set_drone_streamon_port(self):
         self.socket.bind(('0.0.0.0', self.video_port))
         self.send_control_command(self.socket, f"port {self.default_drone_port} {self.video_port}", self.default_buffer_size)
-
-    def enable_streamon(self):
-        self.send_control_command(self.socket, "streamon")
         
     def send_control_command(self, socket: object, command: str, buffer_size: int) -> str:
         socket.sendto(bytes(command, 'utf-8'), (self.host, self.default_drone_port))

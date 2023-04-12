@@ -5,6 +5,7 @@ import socket
 class threaded_TCP_server:
     def __init__(self, tcpPort, udpPort):
         self.local_host = '' #LocalHost Depending on which device runs the server
+        self.client_connected = False
         print(f'Server Addres: {socket.gethostbyname(socket.gethostname())}')
 
         self.tcp_connections = []
@@ -52,11 +53,13 @@ class threaded_TCP_server:
     def udp(self, socket):
         while True:
             try:
-                socket.recvfrom(2048)
+                streamdata = socket.recvfrom(2048)
+                #socket.sendto(streamdata) #Missing target, send to client ip and port
             except Exception as e:
                 print(f"Could not retreive Video stream: {e}")
-       
 
+
+    '''
     def server_loop(self):
         while True:
             print('<Server> Ready for new client')
@@ -64,3 +67,4 @@ class threaded_TCP_server:
             thread = threading.Thread(target=self.thread, args=(connection_socket, source_ip), daemon=True)
 
             thread.start()
+    '''
