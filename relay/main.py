@@ -44,10 +44,10 @@ class Relaybox:
             
     def start(self) -> None:
         logging.info("[THREAD] Scanning for drones...")
-        scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(self.filter_scanned_drones,))
+        scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(self.filter_scanned_drones,), daemon=True)
         scan_for_drone_thread.start()
         
-        heartbeat_thread = threading.Thread(target=self.heartbeat, args=())
+        heartbeat_thread = threading.Thread(target=self.heartbeat, args=(), daemon=True)
         heartbeat_thread.start()
 
     def heartbeat(self):
@@ -151,7 +151,7 @@ class Relaybox:
         drone = Drone(name=drone_name, parent=self.name, host=host)
         self.drones[drone_name] = { "Ip": host, "objectId": drone }
 
-        drone_thread = threading.Thread(target=drone.start, args=())
+        drone_thread = threading.Thread(target=drone.start, args=(), daemon=True)
         drone_thread.start()
 
     def delete_drone(self, name) -> None:
@@ -177,6 +177,7 @@ class Drone:
         self.video_port = None #NOTE: video_port for relay -> backend
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('127.0.0.1', 8889))
+        
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
 
@@ -189,7 +190,7 @@ class Drone:
         logging.debug("Got port")
 
         logging.debug(f"[{self.name}] Entering SDK mode...")        
-        self.send_control_command(self.socket, f"command", 2048)
+        self.send_control_command(f"command", 2048)
         logging.debug("Entered SDK mode")
 
         logging.debug(f"[{self.name}] Telling drone to use port {self.video_port} for streamon...")
@@ -197,16 +198,16 @@ class Drone:
         logging.debug(f"{self.name} used {self.video_port} port for streamon")
 
         logging.debug(f"[{self.name}] Enabling streamon...")
-        self.send_control_command(self.socket, "streamon", 2048)
+        self.send_control_command("streamon", 2048)
         logging.debug("Enabled streamon")
 
         #Start Threads for each process
         logging.debug(f"[{self.name}] Starting video thread")
-        vidthread = threading.Thread(target=self.video_thread()).start()
+        vidthread = threading.Thread(target=self.video_thread(), daemon=True).start()
         logging.debug(f"[{self.name}] Starting status thread")
-        statthread = threading.Thread(target=self.status_thread()).start()
+        statthread = threading.Thread(target=self.status_thread(), daemon=True).start()
         logging.debug(f"[{self.name}] Starting rc thread")
-        commandthread = threading.Thread(target=self.rc_thread()).start()
+        commandthread = threading.Thread(target=self.rc_thread(), daemon=True).start()
 
         sleep(1)
 
@@ -243,12 +244,16 @@ class Drone:
 
     def set_drone_streamon_port(self):
         self.video_socket.bind(('127.0.0.1', self.video_port))
-        self.send_control_command(self.socket, f"port {self.default_drone_port} {self.video_port}", self.default_buffer_size)
+        self.send_control_command(f"port {self.default_drone_port} {self.video_port}", self.default_buffer_size)
         
-    def send_control_command(self, socket: object, command: str, buffer_size: int) -> str:
-        socket.sendto(bytes(command, 'utf-8'), (self.host, self.default_drone_port))
-        status = socket.recvfrom(buffer_size)
+    def send_control_command(self, command: str, buffer_size: int) -> str:
+        self.socket.sendto(bytes(command, 'utf-8'), (self.host, self.default_drone_port))
+        status = self.socket.recvfrom(buffer_size)
         return status
+    
+    def close_socket(self):
+        self.socket.close()
+        logging.debug('Closed socket')
     
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
