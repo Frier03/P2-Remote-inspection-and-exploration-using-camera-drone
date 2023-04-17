@@ -232,7 +232,7 @@ class Drone:
         query = { 'name': self.name, 'parent': self.parent }
         response = requests.get(f'{BACKEND_URL}/new_drone', json=query)
         
-        if response.status_code != 200: # Every HTTPException
+        if response.status_code != 200: # Every HTTPException.
             logging.error(f"Error trying to get available port from URL [{response.url}] with status code {response.status_code}")
             self.get_video_port()
         
