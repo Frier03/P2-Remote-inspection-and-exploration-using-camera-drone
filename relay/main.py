@@ -176,6 +176,8 @@ class Drone:
         self.default_drone_port = 8889 
         self.video_port = None #NOTE: video_port for relay -> backend
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.bind(('127.0.0.1', 8889))
+        self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
 
     
@@ -221,8 +223,8 @@ class Drone:
     def video_thread(self):
         while True:
             try:
-                video_feed = self.socket.recvfrom(self.default_buffer_size)
-                self.socket.sendto(video_feed, f"IP:{self.video_port}") #REPLACE IP WITH BACKEND IP
+                video_feed = self.video_socket.recvfrom(self.default_buffer_size)
+                logging.info(video_feed)
             except Exception as error:
                 logging.error(f"Could not send video feed to backend {error}")
 
@@ -240,13 +242,13 @@ class Drone:
         self.video_port = port
 
     def set_drone_streamon_port(self):
-        self.socket.bind(('', self.video_port))
+        self.video_socket.bind(('127.0.0.1', self.video_port))
         self.send_control_command(self.socket, f"port {self.default_drone_port} {self.video_port}", self.default_buffer_size)
         
     def send_control_command(self, socket: object, command: str, buffer_size: int) -> str:
         socket.sendto(bytes(command, 'utf-8'), (self.host, self.default_drone_port))
-        res = socket.recvfrom(buffer_size)
-        return res
+        status = socket.recvfrom(buffer_size)
+        return status
     
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
