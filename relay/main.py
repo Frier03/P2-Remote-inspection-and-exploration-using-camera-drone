@@ -176,8 +176,10 @@ class Drone:
         self.host = host
         self.default_drone_port = 8889 
         self.video_port = None #NOTE: video_port for relay -> backend
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind(('', 8889))
+
+        # Dette socket skal rykkes op i relay objektet.
+        self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.control_socket.bind(('', self.default_drone_port))
 
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
@@ -248,12 +250,12 @@ class Drone:
         self.send_control_command(f"port {self.default_drone_port} {self.video_port}", self.default_buffer_size)
         
     def send_control_command(self, command: str, buffer_size: int) -> str:
-        self.socket.sendto(bytes(command, 'utf-8'), (self.host, self.default_drone_port))
-        status = self.socket.recvfrom(buffer_size)
+        self.control_socket.sendto(bytes(command, 'utf-8'), (self.host, self.default_drone_port))
+        status = self.control_socket.recvfrom(buffer_size)
         return status
     
     def close_socket(self):
-        self.socket.close()
+        self.control_socket.close()
         logging.debug('Closed socket')
     
 if __name__ == '__main__':
