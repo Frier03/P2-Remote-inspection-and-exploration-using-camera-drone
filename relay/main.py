@@ -177,7 +177,7 @@ class Drone:
         self.default_drone_port = 8889 
         self.video_port = None #NOTE: video_port for relay -> backend
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind(('127.0.0.1', 8889))
+        self.socket.bind(('', 8889))
 
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
