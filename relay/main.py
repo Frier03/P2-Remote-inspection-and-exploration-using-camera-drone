@@ -240,7 +240,7 @@ class Drone:
         self.video_port = port
 
     def set_drone_streamon_port(self):
-        self.socket.bind(('127.0.0.1', self.video_port))
+        self.socket.bind(('', self.video_port))
         self.send_control_command(self.socket, f"port {self.default_drone_port} {self.video_port}", self.default_buffer_size)
         
     def send_control_command(self, socket: object, command: str, buffer_size: int) -> str:
@@ -252,6 +252,6 @@ if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
     relay.connect_to_backend()
     relay.start()
-    
+
     #drone = Drone("drone_01", "relay_0001", "192.168.1.154")
     #drone.start()
