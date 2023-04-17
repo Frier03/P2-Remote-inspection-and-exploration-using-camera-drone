@@ -44,10 +44,10 @@ class Relaybox:
             
     def start(self) -> None:
         logging.info("[THREAD] Scanning for drones...")
-        scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(self.filter_scanned_drones,), daemon=True)
+        scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(self.filter_scanned_drones,))
         scan_for_drone_thread.start()
         
-        heartbeat_thread = threading.Thread(target=self.heartbeat, args=(), daemon=True)
+        heartbeat_thread = threading.Thread(target=self.heartbeat, args=())
         heartbeat_thread.start()
 
     def heartbeat(self):
@@ -151,7 +151,7 @@ class Relaybox:
         drone = Drone(name=drone_name, parent=self.name, host=host)
         self.drones[drone_name] = { "Ip": host, "objectId": drone }
 
-        drone_thread = threading.Thread(target=drone.start, args=(), daemon=True)
+        drone_thread = threading.Thread(target=drone.start, args=())
         drone_thread.start()
 
     def delete_drone(self, name) -> None:
@@ -162,6 +162,7 @@ class Relaybox:
     def disconnected_drone(self, drone: object) -> None:
         query = { 'name': drone.name, 'parent': drone.parent }
         response = requests.post(f'{BACKEND_URL}/drone/disconnected', json=query)
+
         if response.status_code != 200: # Every HTTPException
             logging.error(f'Error: {response.url} | {response.status_code} | Retrying in 2 seconds')
             sleep(2)
@@ -177,7 +178,7 @@ class Drone:
         self.video_port = None #NOTE: video_port for relay -> backend
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('127.0.0.1', 8889))
-        
+
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
 
@@ -203,11 +204,11 @@ class Drone:
 
         #Start Threads for each process
         logging.debug(f"[{self.name}] Starting video thread")
-        vidthread = threading.Thread(target=self.video_thread(), daemon=True).start()
+        vidthread = threading.Thread(target=self.video_thread()).start()
         logging.debug(f"[{self.name}] Starting status thread")
-        statthread = threading.Thread(target=self.status_thread(), daemon=True).start()
+        statthread = threading.Thread(target=self.status_thread()).start()
         logging.debug(f"[{self.name}] Starting rc thread")
-        commandthread = threading.Thread(target=self.rc_thread(), daemon=True).start()
+        commandthread = threading.Thread(target=self.rc_thread()).start()
 
         sleep(1)
 
