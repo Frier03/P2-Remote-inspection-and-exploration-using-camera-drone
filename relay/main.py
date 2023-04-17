@@ -45,7 +45,7 @@ class Relaybox:
     def start(self) -> None:
         logging.info("[THREAD] Scanning for drones...")
         scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=(self.filter_scanned_drones,))
-        #scan_for_drone_thread.start()
+        scan_for_drone_thread.start()
         
         heartbeat_thread = threading.Thread(target=self.heartbeat, args=())
         heartbeat_thread.start()
@@ -240,7 +240,7 @@ class Drone:
         self.video_port = port
 
     def set_drone_streamon_port(self):
-        self.socket.bind(('0.0.0.0', self.video_port))
+        self.socket.bind(('127.0.0.1', self.video_port))
         self.send_control_command(self.socket, f"port {self.default_drone_port} {self.video_port}", self.default_buffer_size)
         
     def send_control_command(self, socket: object, command: str, buffer_size: int) -> str:
@@ -252,8 +252,6 @@ if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
     relay.connect_to_backend()
     relay.start()
-
-    relay.filter_scanned_drones( [('192.168.1.130', '00:00:00:00:00')] )
-
+    
     #drone = Drone("drone_01", "relay_0001", "192.168.1.154")
     #drone.start()
