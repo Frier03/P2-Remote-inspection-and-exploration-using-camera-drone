@@ -187,15 +187,15 @@ class Drone:
         logging.debug("Got port")
 
         logging.debug(f"[{self.name}] Entering SDK mode...")        
-        self.send_control_command(self.socket, f"command")
+        self.send_control_command(self.socket, f"command", 2048)
         logging.debug("Entered SDK mode")
 
         logging.debug(f"[{self.name}] Telling drone to use port {self.video_port} for streamon...")
-        #self.set_drone_streamon_port()
+        self.set_drone_streamon_port()
         logging.debug(f"{self.name} used {self.video_port} port for streamon")
 
         logging.debug(f"[{self.name}] Enabling streamon...")
-        self.send_control_command(self.socket, "streamon")
+        self.send_control_command(self.socket, "streamon", 2048)
         logging.debug("Enabled streamon")
 
         #Start Threads for each process
