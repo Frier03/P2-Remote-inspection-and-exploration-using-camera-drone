@@ -90,7 +90,7 @@ class Relaybox:
     def scan_for_drone(self, callback) -> None: # THREAD!
         while True:
             # The ip is specific for the relays we develop, therefore all drones connected to a relay will have the same first 24bits.
-            regex = r"""(10\.42\.0\.[0-9]{0,3}) *([0-9a-z-]*)""" #-Bjørn
+            regex = r"""(192\.168\.137\.[0-9]{0,3}) *([0-9a-z-]*)""" #-Bjørn
             output = str(subprocess.check_output(['arp', '-a']))
             output = output.replace(" \r","")
             scanned_drones = re.findall(regex, output) # [(192.168.137.xxx, 00:00:00:00:00:00), ...] 
