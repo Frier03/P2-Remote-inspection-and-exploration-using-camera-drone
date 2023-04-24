@@ -11,7 +11,7 @@ ENCODING = 'utf-8'
 local_address = (HOST, PORT)
 
 #Tello drone IP and port
-tello_address = ('192.168.137.245', 8889)
+tello_address = ('192.168.137.151', 8889)
 
 #Backend Server
 backend_address = ('89.150.129.29', 6969)
