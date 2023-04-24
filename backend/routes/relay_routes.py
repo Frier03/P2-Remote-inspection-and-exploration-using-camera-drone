@@ -1,8 +1,9 @@
 from fastapi import HTTPException, status, APIRouter, Depends
+import time
 
 from helper_functions import generate_access_token
 from mongodb_handler import get_mongo
-from models import DroneModel, RelayHandshakeModel
+from models import DroneModel, RelayHandshakeModel, RelayHeartbeatModel
 from relaybox import Relay
 
 relay_router = APIRouter()
@@ -10,19 +11,37 @@ active_relays = {}
 
 @relay_router.post("/")
 def handle():
-    result = {}
-    for relay_key in active_relays.keys():
-        relay = active_relays[relay_key]
-        result[relay_key] = { "drones": relay.drones }
-        
-    return result
+    pass
+
+@relay_router.get('/cmd_queue')
+def handle(relay: RelayHeartbeatModel): # Relay wants every drone cmd_queue that is linked to him
+    if relay.name not in active_relays.keys(): # invalid relay name? or not active?
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Relay not found",
+    )
+
+    drones_cmd = {} # { "drone_01": ['up', 'down', 'left'], "drone_02": ['down', 'left']}
+    for drone in active_relays[relay.name].drones.values():
+        drones_cmd[drone.name] = drone.cmd_queue
+
+    return drones_cmd
 
 @relay_router.get("/heartbeat")
-def handle(relay: RelayHandshakeModel):
-    print(f"(!) Heartbeat from {relay.name}")
+def handle(relay: RelayHeartbeatModel): # Relay should send a heartbeat every 2sec
+
+    # Get utc since 1970
+    utc: int = int(time.time())
+
+    # Get specific relay object for the relay who made the heartbeat
+    relay = active_relays[relay.name]
+    relay.last_heartbeat_received = utc
+
+    print(f"(!) Heartbeat from {relay.name} | timestamp {utc}")
     print(f"(!) Retrieving all data related to {relay.name}")
     
     data = active_relays.get(relay.name)
+
     return { "message": f"Hello {relay.name}", f"{relay.name}": { "drones": data.drones } }
 
 @relay_router.post("/drone/disconnected")
