@@ -198,7 +198,7 @@ class Drone:
         self.control_port = control_port
         self.video_port = None #NOTE: video_port for relay -> backend
 
-        # Dette socket skal rykkes op i relay objektet. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Socket for sending control commands and receiving status from drone.
         self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.control_socket.bind(('', self.control_port))
 
