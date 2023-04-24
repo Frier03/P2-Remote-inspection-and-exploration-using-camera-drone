@@ -8,13 +8,13 @@ from time import sleep, time
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-BACKEND_URL = 'http://localhost:8000/v1/api/relay' # https://example.com/
+BACKEND_URL = 'http://localhost:8000/v1/api/relay' # https://example.com/ or http://ip
 ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78']
 
 class Relaybox:
     def __init__(self, name, password) -> None:
         self.name = name
-        self.password = password
+        self.password = password #passwork/access to
         self.drones = {}
         self.token = None
         
@@ -177,14 +177,14 @@ class Drone:
         self.default_drone_port = 8889 
         self.video_port = None #NOTE: video_port for relay -> backend
 
-        # Dette socket skal rykkes op i relay objektet.
+        # Dette socket skal rykkes op i relay objektet. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.control_socket.bind(('', self.default_drone_port))
 
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
 
-    
+
     def start(self):
         logging.info(f"Starting {self.name} on {self.parent}")
         
@@ -254,9 +254,9 @@ class Drone:
         status = self.control_socket.recvfrom(buffer_size)
         return status
     
-    def close_socket(self):
-        self.control_socket.close()
-        logging.debug('Closed socket')
+    def close_socket(socket):
+        socket.close()
+        logging.debug(f'Closed socket {socket}')
     
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
