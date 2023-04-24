@@ -3,8 +3,8 @@ import threading
 import socket
 
 class video_server:
-    def __init__(self, UDP_Port):
-        self.UDP_port = UDP_Port
+    def __init__(self, UDP_port):
+        self.UDP_port = UDP_port
 
     def start(self):
         self.local_host = '' #LocalHost depending on which device runs the server
