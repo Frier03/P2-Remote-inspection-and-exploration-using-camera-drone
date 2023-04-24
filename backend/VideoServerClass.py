@@ -3,20 +3,38 @@ import threading
 import socket
 
 class video_server:
-    def start(self, UDP_Port):
+    def __init__(self, UDP_Port):
+        self.UDP_port = UDP_Port
+
+    def start(self):
         self.local_host = '' #LocalHost depending on which device runs the server
         self.connections = []
         print(f'Server Addres: {socket.gethostbyname(socket.gethostname())}')
 
         #Define UDP Address and Socket
-        self.local_udp_addr = (self.local_host, UDP_Port) #UDP Address
+        self.local_udp_addr = (self.local_host, self.UDP_port) #UDP Address
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP Socket for stream
         self.udp_sock.bind(self.local_udp_addr) #Bind the udp socket to the UDP Address
 
-        stream_thread = threading.Thread(target=self.handle_stream(), args=())
+        stream_thread = threading.Thread(target=self.check_conn(), args=())
         stream_thread.start()
 
     def handle_stream(self):
+        while len(self.connections) == 2: #While both 
+            try:
+                streamAddressPair = self.udp_sock.recvfrom(2048)
+            except Exception as e:
+                print(f'Could not retrieve message: {e}')
+            
+            try:
+                for i in self.connections:
+                    if i != streamAddressPair[1]:
+                        self.udp_sock.sendto(streamAddressPair, i)
+            except Exception as c:
+                print(f"Could not send message: {c}")
+                
+
+    def check_conn(self):
         while len(self.connections) < 2: #Wait for both user and relaybox
             try:
                 bytesAddressPair = self.udp_sock.recvfrom(2048)
@@ -27,12 +45,18 @@ class video_server:
                 self.connections.append(bytesAddressPair)
         
         print("Both have connected via udp")
+        self.handle_stream() #Rewire thread
 
         
 
-
-
 '''
+
+# Create a Server instance which handles the video connection
+    udp_object = video_server(UDP_port = port)
+    stream_thread = threading.Thread(target=udp_object.start(), args=())
+    stream_thread.start()
+
+
 class threaded_TCP_server:
     def __init__(self, tcpPort, udpPort):
         self.local_host = '' #LocalHost Depending on which device runs the server
