@@ -13,6 +13,9 @@ class video_server:
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP Socket for stream
         self.udp_sock.bind(self.local_udp_addr) #Bind the udp socket to the UDP Address
 
+        stream_thread = threading.Thread(target=self.handle_stream(), args=())
+        stream_thread.start()
+
     def handle_stream(self):
         while len(self.connections) < 2: #Wait for both user and relaybox
             try:
