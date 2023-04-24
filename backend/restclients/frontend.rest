@@ -17,3 +17,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsI
 
 POST http://localhost:8000/v1/api/frontend/logout
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MDM1MTYyOX0.uEJMorAeBdQbxUxMJsCGf6Z74JBWBAJ-zoEk0WK3P5A
+
+###
+
+POST http://localhost:8000/v1/api/frontend/new_cmd_for_drone
+Content-Type: application/json
+
+{
+    "relay_name": "relay_0001",
+    "drone_name": "drone_02",
+    "cmd": "left"
+}

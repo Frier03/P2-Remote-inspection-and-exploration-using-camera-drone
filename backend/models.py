@@ -1,7 +1,11 @@
 from pydantic import BaseModel
+
 class RelayHandshakeModel(BaseModel):
     name: str
-    password: str = None
+    password: str
+    
+class RelayHeartbeatModel(BaseModel):
+    name: str
 
 class DroneModel(BaseModel):
     name: str
@@ -14,3 +18,8 @@ class TokenModel(BaseModel):
 class UserModel(BaseModel):
     name: str
     password: str
+
+class NewCMDModel(BaseModel):
+    relay_name: str
+    drone_name: str
+    cmd: str
