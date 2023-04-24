@@ -7,7 +7,8 @@ from helper_functions import generate_access_token, decode_access_token, is_user
 
 routes_with_authorization = [
     "/v1/api/frontend/protected",
-    "/v1/api/frontend/logout"
+    "/v1/api/frontend/logout",
+    "/v1/api/relay/heartbeat"
 ]
 
 blacklisted_tokens = {}

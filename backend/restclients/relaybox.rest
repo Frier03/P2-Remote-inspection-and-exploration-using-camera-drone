@@ -15,7 +15,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wM
 Content-Type: application/json
 
 {
-    "name": "drone_03",
+    "name": "drone_02",
     "parent": "relay_0001"
 }
 
@@ -36,6 +36,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wM
 ###
 
 GET http://localhost:8000/v1/api/relay/heartbeat
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAxIiwiZXhwIjoxNjgyNDI4NjY0fQ.D-BM0wvdCiSZp8tLSm-mZaiAv8spqqL9A33g0XjXSJk
 Content-Type: application/json
 
 {
@@ -50,4 +51,13 @@ Content-Type: application/json
 {
     "name": "drone_01",
     "parent": "relay_0001"
+}
+
+###
+
+GET http://localhost:8000/v1/api/relay/cmd_queue
+Content-Type:  application/json
+
+{
+    "name": "relay_0sdfd"
 }

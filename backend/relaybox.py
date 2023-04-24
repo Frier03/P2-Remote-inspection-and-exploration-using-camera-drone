@@ -1,6 +1,7 @@
 class Drone:
     def __init__(self, name):
         self.name = name
+        self.cmd_queue = []
         self.ports = { "video": None }
 
 class Relay:
@@ -8,6 +9,7 @@ class Relay:
         self.name = name
         self.drones = {}
         self.active_relays = active_relays
+        self.last_heartbeat_received = None
 
     def add_drone(self, name):
         # Check for available ports
