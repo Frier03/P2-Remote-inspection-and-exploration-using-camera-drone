@@ -6,6 +6,9 @@ from mongodb_handler import get_mongo
 from models import DroneModel, RelayHandshakeModel, RelayHeartbeatModel
 from relaybox import Relay
 
+import threading
+from VideoServerClass import video_server
+
 relay_router = APIRouter()
 active_relays = {}
 
@@ -104,6 +107,11 @@ def handle(drone: DroneModel):
     
     # Add new drone to relay and get available port
     port = relay.add_drone(drone.name)
+
+    # Create a Server instance which handles the video connection
+    udp_object = video_server(UDP_port = port)
+    stream_thread = threading.Thread(target=udp_object.start(), args=())
+    stream_thread.start()
 
     #print(relay.drones[drone.name].name)
     return { "video_port": port }

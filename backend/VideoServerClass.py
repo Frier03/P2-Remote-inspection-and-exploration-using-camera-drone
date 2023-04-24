@@ -2,6 +2,34 @@ import sys, time
 import threading
 import socket
 
+class video_server:
+    def start(self, UDP_Port):
+        self.local_host = '' #LocalHost depending on which device runs the server
+        self.connections = []
+        print(f'Server Addres: {socket.gethostbyname(socket.gethostname())}')
+
+        #Define UDP Address and Socket
+        self.local_udp_addr = (self.local_host, UDP_Port) #UDP Address
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP Socket for stream
+        self.udp_sock.bind(self.local_udp_addr) #Bind the udp socket to the UDP Address
+
+    def handle_stream(self):
+        while len(self.connections) < 2: #Wait for both user and relaybox
+            try:
+                bytesAddressPair = self.udp_sock.recvfrom(2048)
+            except Exception as e:
+                print(f'Could not retrieve message: {e}')
+
+            if bytesAddressPair[1] not in self.connections: #If the connection is not in the list
+                self.connections.append(bytesAddressPair)
+        
+        print("Both have connected via udp")
+
+        
+
+
+
+'''
 class threaded_TCP_server:
     def __init__(self, tcpPort, udpPort):
         self.local_host = '' #LocalHost Depending on which device runs the server
@@ -38,7 +66,6 @@ class threaded_TCP_server:
                 print(f"Could not retreive Video stream: {e}")
 
 
-    '''
     def server_loop(self):
         while True:
             print('<Server> Ready for new client')
