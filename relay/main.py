@@ -68,7 +68,7 @@ class Relaybox:
             end_time = time()
             self.heartbeat_response_time = end_time - start_time
             backend_data_status = self.backend_data_up_to_date(response) # Check if backend data is up to date with the data we have here
-            logging.info(f'Heartbeat | {backend_data_status} | Response time: {self.heartbeat_response_time:.3f} seconds')
+            logging.info(f'Heartbeat | {backend_data_status} | Response time: {self.heartbeat_response_time:.3f} seconds | Used_control_ports: {self.used_control_ports}')
             
             sleep(self.heartbeat_interval)
     
@@ -166,7 +166,6 @@ class Relaybox:
         self.used_control_ports.remove(object.control_port)
         del object
         self.drones.pop(name)
-
 
     def disconnected_drone(self, drone: object) -> None:
         query = { 'name': drone.name, 'parent': drone.parent }
