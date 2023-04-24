@@ -14,9 +14,12 @@ ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78']
 class Relaybox:
     def __init__(self, name, password) -> None:
         self.name = name
-        self.password = password #passwork/access to
-        self.drones = {}
+        self.password = password #passwork/access to backend
+        self.drones = {} #List of drones
         self.token = None
+
+        # Create a control_socket_list for keeping track of which ports are in use.
+        self.used_control_ports = []
         
         #----# Heartbeat variables #----#
         self.session = requests.Session()
@@ -74,10 +77,12 @@ class Relaybox:
         for drone_name, drone_data in self.drones.items():
             drone = drone_data['objectId']
             backend_drone_data = response.get(self.name, {}).get('drones', {}).get(drone_name, {})
+
             if backend_drone_data == {'name': drone.name, 'ports': {'video': drone.video_port}}:
                 pass
             else:
                 up_to_date = False
+ 
         for backend_drone_name, backend_drone_data in response.get(self.name, {}).get('drones', {}).items():
             if backend_drone_name not in self.drones:
                 up_to_date = False
@@ -146,9 +151,11 @@ class Relaybox:
             if "drone_{:03d}".format(num) not in used_names:
                 drone_name = "drone_{:03d}".format(num)
                 break
+        
+        control_port = self.get_control_port()
 
         # create a class for the drone now
-        drone = Drone(name=drone_name, parent=self.name, host=host)
+        drone = Drone(name=drone_name, parent=self.name, host=host, control_port=control_port)
         self.drones[drone_name] = { "Ip": host, "objectId": drone }
 
         drone_thread = threading.Thread(target=drone.start, args=())
@@ -156,8 +163,10 @@ class Relaybox:
 
     def delete_drone(self, name) -> None:
         object = self.drones[name].get('objectId')
+        self.used_control_ports.remove(object.control_port)
         del object
         self.drones.pop(name)
+
 
     def disconnected_drone(self, drone: object) -> None:
         query = { 'name': drone.name, 'parent': drone.parent }
@@ -167,19 +176,32 @@ class Relaybox:
             logging.error(f'Error: {response.url} | {response.status_code} | Retrying in 2 seconds')
             sleep(2)
             self.disconnected_drone(drone)
+    
+    def get_control_port(self) -> int:
+        # All 255 usable drone status ports, since its from 3400 to, but not including, 3656 alas a total of 255.
+        for control_port in range(3400, 3656):
+
+            # if the port is not yet used, use it.
+            if control_port not in self.used_control_ports:
+
+                # Append port to used_status_ports to keep track of which ports are in use.
+                self.used_control_ports.append(control_port)
+                return control_port
+            else:
+                raise Exception("No available status ports")
 
 
 class Drone:
-    def __init__(self, name, parent, host) -> None:
+    def __init__(self, name, parent, host, control_port) -> None:
         self.name = name
         self.parent = parent
         self.host = host
-        self.default_drone_port = 8889 
+        self.control_port = control_port
         self.video_port = None #NOTE: video_port for relay -> backend
 
         # Dette socket skal rykkes op i relay objektet. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.control_socket.bind(('', self.default_drone_port))
+        self.control_socket.bind(('', self.control_port))
 
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048

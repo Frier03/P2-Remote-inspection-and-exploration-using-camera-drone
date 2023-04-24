@@ -1,6 +1,6 @@
 import socket, time
 import threading
-from ServerClass import threaded_TCP_server
+from VideoServerClass import threaded_TCP_server
 
 #Constantly Listen for Connections and initate class when
 ServerIP = ''
