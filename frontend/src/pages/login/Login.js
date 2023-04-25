@@ -27,7 +27,6 @@ function LoginForm() {
         if (data.access_token) {
             setToken(data.access_token);
             Cookies.set('access_token', data.access_token)
-
         } else {
             alert('Invalid credentials');
         }

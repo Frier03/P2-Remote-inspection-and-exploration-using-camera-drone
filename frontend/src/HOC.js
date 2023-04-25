@@ -10,8 +10,10 @@ async function validateToken() {
       'Content-Type': 'application/json'
     }
   })
-  .then(async response => {
+  .then(response => {
     if(response.ok) {
+      console.log(response)
+      console.log(response.headers)
       return true;
     } else {
       return false;
@@ -36,11 +38,10 @@ function withAuthorization(WrappedComponent, unauthorizedRedirect) {
       if (token) {
         validateToken()
           .then(isAuthorized => {
-            console.log(isAuthorized)
             if (isAuthorized) {
               setAuthorizationStatus("Authorized");
             } else {
-              //window.location.href = unauthorizedRedirect;
+              window.location.href = unauthorizedRedirect;
             }
           })
           .catch(error => console.error(error));

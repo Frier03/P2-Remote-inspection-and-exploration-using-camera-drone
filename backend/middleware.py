@@ -58,5 +58,5 @@ async def middleware(request: Request, call_next):
     
     # Store token and expiration in blacklisted_tokens
     blacklisted_tokens[expire] = access_token
-
+    print(response.headers)
     return response
