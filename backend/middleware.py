@@ -17,10 +17,9 @@ async def middleware(request: Request, call_next):
     # Routes with no authentication
     if request.url.path not in routes_with_authorization: # Routes with no authentication
         return await call_next(request)
-    
+
     # Get access token from headers
     access_token = request.headers.get('authorization')
-
     # If no access_token declared, raise 401
     if access_token is None:
         return starletteHTMLResponse(status_code=401)

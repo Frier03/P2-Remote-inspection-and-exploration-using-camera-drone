@@ -25,9 +25,9 @@ function LoginForm() {
     .then(response => response.json())
     .then(data => {
         if (data.access_token) {
-            console.log(data)
             setToken(data.access_token);
             Cookies.set('access_token', data.access_token)
+
         } else {
             alert('Invalid credentials');
         }
