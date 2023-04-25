@@ -164,6 +164,10 @@ class Relaybox:
     def delete_drone(self, name) -> None:
         object = self.drones[name].get('objectId')
         self.used_control_ports.remove(object.control_port)
+
+        # Close the control socket to allow a new drone to use it.
+        object.control_socket.close()
+
         del object
         self.drones.pop(name)
 
@@ -179,6 +183,10 @@ class Relaybox:
     def get_control_port(self) -> int:
         # All 255 usable drone status ports, since its from 3400 to, but not including, 3656 alas a total of 255.
         for control_port in range(3400, 3656):
+            
+            # Raise exception if the maximum amount of control ports have been used.
+            if len(self.used_control_ports) == 255:
+                raise Exception("No available status ports")
 
             # if the port is not yet used, use it.
             if control_port not in self.used_control_ports:
@@ -186,9 +194,7 @@ class Relaybox:
                 # Append port to used_status_ports to keep track of which ports are in use.
                 self.used_control_ports.append(control_port)
                 return control_port
-            else:
-                raise Exception("No available status ports")
-
+            
 
 class Drone:
     def __init__(self, name, parent, host, control_port) -> None:
