@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 
-function validateToken() {
-  return fetch('http://127.0.0.1:8000/v1/auth/protected', {
+async function validateToken() {
+  return fetch('http://127.0.0.1:8000/v1/api/frontend/protected', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${Cookies.get('access_token')}`,
@@ -20,7 +20,7 @@ function validateToken() {
   })
   .catch(error => {
     if (error.message === 'Failed to fetch') {
-      alert('API is offline')
+      alert('API is offline, bro what')
     } else {
       alert('An error occured')
     }

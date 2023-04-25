@@ -11,7 +11,7 @@ function LoginForm() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    fetch('http://127.0.0.1:8000/v1/auth/login', {
+    fetch('http://localhost:8000/v1/api/frontend/login', {
         method: 'POST',
         headers: {
         'Accept': 'application/json',
@@ -25,6 +25,7 @@ function LoginForm() {
     .then(response => response.json())
     .then(data => {
         if (data.access_token) {
+            console.log(data)
             setToken(data.access_token);
             Cookies.set('access_token', data.access_token)
         } else {
@@ -42,7 +43,6 @@ function LoginForm() {
   if (token) {
     // Redirect to the protected route
     window.location.href = '/'
-    
   }
 
   return (
