@@ -268,10 +268,11 @@ class Drone:
 
     def set_drone_streamon_port(self):
         self.video_socket.bind(('127.0.0.1', self.video_port))
-        self.send_control_command(f"port {self.default_drone_port} {self.video_port}", self.default_buffer_size)
+        self.send_control_command(f"port {self.control_port} {self.video_port}", self.default_buffer_size)
         
     def send_control_command(self, command: str, buffer_size: int) -> str:
-        self.control_socket.sendto(bytes(command, 'utf-8'), (self.host, self.default_drone_port))
+        # The port does not really matter in terms of functionallity.
+        self.control_socket.sendto(bytes(command, 'utf-8'), (self.host, self.control_port)) 
         status = self.control_socket.recvfrom(buffer_size)
         return status
     
