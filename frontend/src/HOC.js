@@ -5,24 +5,25 @@ async function validateToken() {
   return fetch('http://127.0.0.1:8000/v1/api/frontend/protected', {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${Cookies.get('access_token')}`,
+      'Authorization': `${Cookies.get('access_token')}`,
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     }
   })
-  .then(response => response.json())
-  .then(data => {
-    if (data.message === "OK") {
+  .then(response => {
+    if(response.ok) {
+      console.log(response)
+      console.log(response.headers)
       return true;
     } else {
       return false;
     }
-  })
+    })
   .catch(error => {
     if (error.message === 'Failed to fetch') {
-      alert('API is offline, bro what')
+      alert('API is offline')
     } else {
-      alert('An error occured')
+      alert(error)
     }
     return false;
   });
@@ -47,10 +48,11 @@ function withAuthorization(WrappedComponent, unauthorizedRedirect) {
       } else {
         window.location.href = unauthorizedRedirect;
       }
-    });
+    }, []); // <-- added empty dependency array here
 
     return <WrappedComponent authorizationStatus={authorizationStatus} {...props} />;
   };
 }
+
 
 export default withAuthorization;
