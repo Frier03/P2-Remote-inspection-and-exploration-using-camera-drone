@@ -12,13 +12,15 @@ app = FastAPI()
 app.include_router(relay_router, prefix="/v1/api/relay")
 app.include_router(frontend_router, prefix="/v1/api/frontend")
 
+app.middleware("http")(middleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["www-authenticate"],
+    allow_headers=["*"],
 )
-app.middleware("http")(middleware)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
