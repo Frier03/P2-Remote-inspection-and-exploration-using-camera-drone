@@ -47,7 +47,7 @@ class video_server:
         print("Both have connected via udp")
         self.handle_stream() #Rewire thread
 
-        
+
 
 '''
 .
