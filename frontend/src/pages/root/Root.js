@@ -1,44 +1,25 @@
 import withAuthorization from "../../authzVerify";
-import Cookies from 'js-cookie';
-import './Root.css';
+import WorkerExample from "./WorkerExample";
+import "./Root.css";
+
 
 function RootForm({ authorizationStatus }) {
-  const getAllRelayboxes = () => {
-    return fetch('http://127.0.0.1:8000/v1/api/frontend/relayboxes/all', {
-    method: 'GET',
-    headers: {
-      'Authorization': `${Cookies.get('access_token')}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(response => response.json())
-  .then(data => console.log(data))
-  .catch(error => {
-    if (error.message === 'Failed to fetch') {
-      alert('API is offline')
-    } else {
-      alert(error)
-    }
-    return false;
-  });
-  }
-  const handleLogout = () => {
-    window.location.href = '/logout';
-  };
+  // create a new worker and pass the worker script file as an argument
+  var worker = new Worker("worker.js");
+  // Start worker
+  // worker gets data from backend every 10 sec
+  // convert data into html
   if (authorizationStatus === "Authorized") {
-    getAllRelayboxes()
     return (
       <>
-        <h1>Authorized</h1>
-        <button onClick={handleLogout}>
-        Logout
-        </button>
+            <div>
+      <h1>Hello World</h1>
+      <WorkerExample />
+        </div>
       </>
     );
   }
 }
-
 
 const AuthorizedRootForm = withAuthorization(RootForm, "/login");
 function RenderAuthorizedContent() {
