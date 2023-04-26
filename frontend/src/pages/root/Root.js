@@ -10,18 +10,18 @@ function RootForm({ authorizationStatus }) {
       'Authorization': `${Cookies.get('access_token')}`,
       'Accept': 'application/json',
       'Content-Type': 'application/json'
-      }
-    })
-    .then(response => response.json())
-    .then(data => console.log(data))
-    .catch(error => {
-      if (error.message === 'Failed to fetch') {
-        alert('API is offline')
-      } else {
-        alert(error)
-      }
-      return false;
-    });
+    }
+  })
+  .then(response => response.json())
+  .then(data => console.log(data))
+  .catch(error => {
+    if (error.message === 'Failed to fetch') {
+      alert('API is offline')
+    } else {
+      alert(error)
+    }
+    return false;
+  });
   }
   const handleLogout = () => {
     window.location.href = '/logout';
