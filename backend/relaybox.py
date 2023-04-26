@@ -18,7 +18,7 @@ class Relay:
             for drone in relay.drones.values():
                 used_ports.update(drone.ports.values())
 
-        for port in range(2222, 3334):
+        for port in range(52222, 53334):
             if port not in used_ports:
                 video_port = port
                 break
