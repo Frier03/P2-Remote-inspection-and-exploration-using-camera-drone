@@ -188,7 +188,7 @@ class Relaybox:
             if len(self.used_control_ports) == 255:
                 raise ValueError("No available control ports")
 
-            # if the port is not yet used, use it.
+            # if the port is not yet used, use i.
             if control_port not in self.used_control_ports:
 
                 # Append port to used_status_ports to keep track of which ports are in use.
