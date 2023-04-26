@@ -13,8 +13,8 @@ function LogoutForm({ authorizationStatus }) {
   }
 
   function handleLogout() {
-  return fetch('http://127.0.0.1:8000/v1/api/frontend/protected', {
-    method: 'POST',
+  return fetch('http://127.0.0.1:8000/v1/api/frontend/logout', {
+    method: 'GET',
     headers: {
       'Authorization': `${Cookies.get('access_token')}`,
       'Accept': 'application/json',
