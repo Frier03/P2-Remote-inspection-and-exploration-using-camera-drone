@@ -1,61 +1,85 @@
 import React, { useState } from 'react';
 import Cookies from 'js-cookie';
+import './Login.css';
 
 function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState('');
 
-  // everything inside of the LoginForm() and outside of the handleSubmit will run whenever a user refreshes or uses the url. This means we can implement authorization here.
-
   function handleSubmit(event) {
     event.preventDefault();
 
     fetch('http://localhost:8000/v1/api/frontend/login', {
-        method: 'POST',
-        headers: {
+      method: 'POST',
+      headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            name: username, 
-            password: password
-        })
+      },
+      body: JSON.stringify({
+        name: username, 
+        password: password
+      })
     })
     .then(response => response.json())
     .then(data => {
-        if (data.access_token) {
-            setToken(data.access_token);
-            Cookies.set('access_token', data.access_token)
-        } else {
-            alert('Invalid credentials');
-        }
+      if (data.access_token) {
+        setToken(data.access_token);
+        Cookies.set('access_token', data.access_token);
+      } else {
+        var msg = document.getElementById('msg');
+        msg.innerHTML = 'Invalid Username or Password'
+        msg.style.display = 'block'
+      }
     })
     .catch(error => {
-        if (error.message === 'Failed to fetch') {
-            alert('API is offline')
-        } else {
-            alert('An error occured')
-        }
-    })
+      if (error.message === 'Failed to fetch') {
+        alert('API is offline');
+      } else {
+        alert('An error occured', error);
+      }
+    });
   }
+
   if (token) {
-    // Redirect to the protected route
-    window.location.href = '/'
+    window.location.href = '/';
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label>
-        Username:
-        <input type="text" value={username} onChange={event => setUsername(event.target.value)} />
-      </label>
-      <label>
-        Password:
-        <input type="password" value={password} onChange={event => setPassword(event.target.value)} />
-      </label>
-      <button type="submit">Login</button>
-    </form>
+    <div className="animated bounceInDown">
+      <div className="container">
+        <span className="error animated tada" id="msg"></span>
+        <form onSubmit={handleSubmit} className="box">
+          <h4>Drone Pilot <span>Dashboard</span></h4>
+          <h5>Sign in to your account.</h5>
+          <label>
+            <input
+              type="text"
+              name="username"
+              value={username}
+              onChange={event => setUsername(event.target.value)}
+              placeholder="Username"
+              autoComplete="off"
+            />
+          </label>
+          <i className="typcn typcn-eye" id="eye"></i>
+          <label>
+            <input
+              type="password"
+              name="password"
+              value={password}
+              onChange={event => setPassword(event.target.value)}
+              placeholder="Password"
+              id="pwd"
+              autoComplete="off"
+            />
+          </label>
+          <button type="submit" className="btn1">
+            Sign in
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 

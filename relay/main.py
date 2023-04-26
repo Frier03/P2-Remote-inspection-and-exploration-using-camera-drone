@@ -186,16 +186,15 @@ class Relaybox:
             
             # Raise exception if the maximum amount of control ports have been used.
             if len(self.used_control_ports) == 255:
-                raise Exception("No available status ports")
+                raise ValueError("No available control ports")
 
-            # if the port is not yet used, use it.
+            # if the port is not yet used, use i.
             if control_port not in self.used_control_ports:
 
                 # Append port to used_status_ports to keep track of which ports are in use.
                 self.used_control_ports.append(control_port)
                 return control_port
             
-
 class Drone:
     def __init__(self, name, parent, host, control_port) -> None:
         self.name = name
@@ -290,6 +289,3 @@ if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
     relay.connect_to_backend()
     relay.start()
-
-    #drone = Drone("drone_01", "relay_0001", "192.168.1.154")
-    #drone.start()

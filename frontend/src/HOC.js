@@ -11,9 +11,8 @@ async function validateToken() {
     }
   })
   .then(response => {
+    console.log(response)
     if(response.ok) {
-      console.log(response)
-      console.log(response.headers)
       return true;
     } else {
       return false;
