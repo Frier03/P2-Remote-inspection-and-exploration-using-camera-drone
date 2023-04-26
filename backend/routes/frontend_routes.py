@@ -7,6 +7,10 @@ from routes.relay_routes import active_relays
 
 frontend_router = APIRouter()
 
+@frontend_router.get("/relayboxes/all") # Retrieve all data backend has for relayboxes
+def handle():
+    return active_relays
+
 @frontend_router.post("/new_cmd_for_drone")
 def handle(cmd_model: NewCMDModel): # relay_name, drone_name
     relay_name = cmd_model.relay_name
@@ -28,7 +32,7 @@ def handle(cmd_model: NewCMDModel): # relay_name, drone_name
         )
     drone = relay.drones[drone_name] # gets drone object id from relay object id
     drone.cmd_queue.append(cmd)
-    return "OK"
+    return { "message": "OK" }
 
 @frontend_router.get("/protected")
 def handle():

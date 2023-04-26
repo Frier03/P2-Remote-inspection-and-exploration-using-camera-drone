@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import Cookies from 'js-cookie';
-import withAuthorization from "../../HOC";
+import withAuthorization from "../../authzVerify";
 
 function LogoutForm({ authorizationStatus }) {
   useEffect(() => {

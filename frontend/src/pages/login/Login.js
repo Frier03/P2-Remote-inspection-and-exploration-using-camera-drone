@@ -34,7 +34,9 @@ function LoginForm() {
     })
     .catch(error => {
       if (error.message === 'Failed to fetch') {
-        alert('API is offline');
+        var msg = document.getElementById('msg');
+        msg.innerHTML = 'Server is offline'
+        msg.style.display = 'block'
       } else {
         alert('An error occured', error);
       }

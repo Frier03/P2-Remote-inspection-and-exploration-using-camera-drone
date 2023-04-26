@@ -32,10 +32,9 @@ def is_user_authorized(access_token: str, blacklisted_tokens: dict[datetime, str
     try:
         # Decode access token
         payload = decode_access_token(access_token)
-        print(type(payload), payload)
+
         # Decode username from payload
         username = payload.get('sub')
-        print(payload, type(payload))
     
         if username is None or access_token in blacklisted_tokens:
             return False
