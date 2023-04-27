@@ -1,14 +1,14 @@
 import withAuthorization from "../../authzVerify";
-import RelaysSidebar from "./components/RelaysSidebar";
+import RelaysSidenav from "./components/RelaysSidenav";
+import Navbar from "./components/Navbar"
 import "./Root.css";
 
 function RootForm({ authorizationStatus }) {
   if (authorizationStatus === "Authorized") {
     return (
       <>
-        <div>
-          <RelaysSidebar/>
-        </div>
+          <Navbar />
+          <RelaysSidenav />
       </>
     );
   }

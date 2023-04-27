@@ -8,7 +8,7 @@ from time import sleep, time
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-BACKEND_URL = 'http://localhost:8000/v1/api/relay' # https://example.com/ or http://ip
+BACKEND_URL = 'http://192.168.137.100:8000/v1/api/relay' # https://example.com/ or http://ip
 ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78']
 
 class Relaybox:
@@ -41,7 +41,7 @@ class Relaybox:
             self.token = token
             logging.info("Connected to backend")
         except Exception:
-            logging.error(f'Tried connecting to backend| Reconnecting in 2 seconds')
+            logging.error(f'Tried connecting to backend | Reconnecting in 2 seconds')
             sleep(2)
             self.connect_to_backend()
             
@@ -169,6 +169,9 @@ class Relaybox:
         object.control_socket.close()
         object.video_socket.close()
 
+        # Set to False to end the threads: vid, status and command.
+        object.drone_active = False
+
         del object
         self.drones.pop(name)
 
@@ -211,6 +214,8 @@ class Drone:
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
 
+        self.drone_active = True
+
 
     def start(self):
         logging.info(f"Starting {self.name} on {self.parent}")
@@ -252,14 +257,14 @@ class Drone:
         ...
 
     def video_thread(self):
-        while True:
+        while self.drone_active == True:
             try:
-                video_feed = self.video_socket.recvfrom(self.default_buffer_size)
-                logging.info(video_feed)
+                video_feed, addr = self.video_socket.recvfrom(self.default_buffer_size)
             except Exception as error:
                 logging.error(f"Could not send video feed to backend {error}")
 
-            self.video_socket.sendto((video_feed, 'utf-8'), ('192.168.137.100', 6969))
+            # Send video feed to backend, with the specific video feed port, given by the backend in get_video_port().
+            self.video_socket.sendto(video_feed, ('192.168.137.100', self.video_port))
 
     def get_video_port(self):
         query = { 'name': self.name, 'parent': self.parent }
@@ -274,16 +279,18 @@ class Drone:
 
     def set_drone_ports(self):
         # the ip should be set '', but when running it on a local machine this socket address is already 
-        # being used by the video_server class.
-        self.video_socket.bind(('127.0.0.1', self.video_port))
-        self.send_control_command(f"port {self.control_port} {self.video_port}", self.default_buffer_size)
+        # being used by the video_server class
+        self.video_socket.bind(('', self.video_port))
+        self.send_control_command(f"port {self.control_port} {self.video_port}", self.default_buffer_size, True)
         
     def send_control_command(self, command: str, buffer_size: int, port_set_flag: bool = False) -> str:
-        # The port does not really matter in terms of functionallity.
-        self.control_socket.sendto(bytes(command, 'utf-8'), (self.host, self.control_port)) 
+        # Send to the tello drone port
+        self.control_socket.sendto(bytes(command, 'utf-8'), (self.host, 8889)) 
 
         if port_set_flag == True:
-            status = self.control_socket.recvfrom(buffer_size)
+            logging.debug('Receiving status')
+            status, addr = self.control_socket.recvfrom(buffer_size)
+            logging.info(f'Status {status} from {addr}')
             return status
     
         return None
