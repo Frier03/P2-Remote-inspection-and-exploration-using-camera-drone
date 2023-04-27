@@ -11,6 +11,7 @@ from VideoServerClass import video_server
 
 relay_router = APIRouter()
 active_relays = {}
+active_sessions = {}
 
 @relay_router.post("/")
 def handle():
@@ -64,6 +65,17 @@ def handle(drone: DroneModel):
     # Find that relay object now
     relay = active_relays[drone.parent]
 
+    #Find the specific server object in session dictionary: {'port': objectId}
+    port = relay.drone.port
+    server_object = active_sessions[port]
+    
+    #Close Sockets in the server session and delete object
+    server_object.udp_sock.close()
+    del server_object
+
+    #Remove session from dictionary
+    active_sessions.pop(port)
+    
     # Delete the drone object on relay drones
     del relay.drones[drone.name]
 
@@ -84,7 +96,7 @@ def handle(relay: RelayHandshakeModel):
     result = {}
     for drone_key in relay.drones.keys():
         drone = relay.drones[drone_key]
-        result[drone_key] = { "name": drone.name, "ports": drone.ports }
+        result[drone_key] = { "name": drone.name, "port": drone.port }
     
     return result
 
@@ -107,10 +119,16 @@ def handle(drone: DroneModel):
     
     # Add new drone to relay and get available port
     port = relay.add_drone(drone.name)
+    print(f"Drone port {port}")
 
     # Create a Server instance which handles the video connection
-    udp_object = video_server(UDP_port = port)
-    stream_thread = threading.Thread(target=udp_object.start, args=())
+    video_feed_instance = video_server(UDP_port = port)
+
+    #Add object and port to dictionary
+    active_sessions[port] = video_feed_instance
+
+    #Start thread
+    stream_thread = threading.Thread(target=video_feed_instance.start, args=())
     stream_thread.start()
 
     #print(relay.drones[drone.name].name)
@@ -132,3 +150,4 @@ def handle(relay: RelayHandshakeModel, mongo: object = Depends(get_mongo)):
     # Generate new HS256 access token
     token = generate_access_token(data={'sub': relay.name}, minutes=24*60)
     return {"access_token": f"Bearer {token}"}
+
