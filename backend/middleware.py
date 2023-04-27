@@ -7,6 +7,7 @@ from helper_functions import is_user_authorized
 
 routes_with_authorization = [
     "/v1/api/frontend/protected",
+    "/v1/api/frontend/users/me",
     "/v1/api/frontend/logout",
     "/v1/api/relay/heartbeat",
     "/v1/api/relay/relayboxes/all"

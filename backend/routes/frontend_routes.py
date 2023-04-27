@@ -1,7 +1,7 @@
-from fastapi import HTTPException, status, APIRouter, Depends
+from fastapi import HTTPException, status, APIRouter, Depends, Request
 import json
 
-from helper_functions import generate_access_token
+from helper_functions import generate_access_token, decode_access_token
 from mongodb_handler import get_mongo
 from models import UserModel, NewCMDModel
 from routes.relay_routes import active_relays
@@ -64,3 +64,15 @@ async def handle(user: UserModel, mongo: object = Depends(get_mongo)):
     # Generate new HS256 access token
     token = generate_access_token(data={"sub": user.name}, minutes=24*60)
     return {"access_token": f"Bearer {token}"}
+
+@frontend_router.get("/users/me")
+def handle(req: Request):
+    access_token = req.headers.get('authorization')
+    access_token = access_token.split(' ')[1]
+    # Decode access token
+    payload = decode_access_token(access_token)
+    
+    # Decode username from payload
+    username = payload.get('sub')
+
+    return { "message": username }
