@@ -257,7 +257,7 @@ class Drone:
 
 
         # Ask API for rc cmds on this drone using drone name and relay name
-        # Send collected rc cmds to drone
+        # Send collected rc cmds to drone.
         ...
 
     def backend_handshake(self):
