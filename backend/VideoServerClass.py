@@ -1,13 +1,16 @@
 import sys, time
 import threading
 import socket
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
 class video_server:
     def __init__(self, UDP_port):
         self.UDP_port = UDP_port
+        self.drone_on = True
 
     def start(self):
-        self.local_host = '0.0.0.0' #LocalHost depending on which device runs the server
+        self.local_host = '' #LocalHost depending on which device runs the server
         self.connections = []
 
         #Define UDP Address and Socket
@@ -19,40 +22,59 @@ class video_server:
         self.check_conn()
 
     def handle_stream(self):
-        while len(self.connections) == 2: #While both 
+        while len(self.connections) == 2 and self.drone_on == True: #While both 
             try:
                 data, relay = self.udp_sock.recvfrom(2048)
 
             except Exception as e:
                 print(f'Could not retrieve message: {e}')
-                self.udp_sock.close()
+                return
             
             try:
                 for conn in self.connections:
                     if conn != relay:
-                        self.udp_sock.sendto(data, conn)
+                        try:
+                            self.udp_sock.sendto(data, conn)
+                        except:
+                            print("Could not send data to client. Client most likely disconnected.")
+                            self.connections.remove(conn)
 
             except Exception as c:
-                print(f"Could not send message: {c}")
-                self.udp_sock.close()
+                print(f"Could not check connections: {c}")
+                return
         
         print("Connection closed")
+        return
                 
 
     def check_conn(self):
-        while len(self.connections) < 2: #Wait for both user and relaybox
+        address = None
+        while len(self.connections) < 2 and self.drone_on == True: #Wait for both user and relaybox
             try:
-                data, address = self.udp_sock.recvfrom(2048)
+                if self.drone_on == True:
+                    data, address = self.udp_sock.recvfrom(2048)
             except Exception as e:
                 print(f'Could not retrieve message: {e}')
-                self.udp_sock.close()
+                self.socket_handle()
 
-            if address not in self.connections: #If the connection is not in the list
-                self.connections.append(address)
-                print(f"Connections: {self.connections}")
-        
-        print("Both have connected via udp")
-        self.handle_stream()
+            if address != None:
+                if address not in self.connections: #If the connection is not in the list
+                    self.connections.append(address)
+                    print(f"Connections: {self.connections}")
+
+            if self.drone_on == True and len(self.connections) == 2:
+                print("Both have connected via udp")
+                self.handle_stream()
+            else:
+                if self.drone_on == False:
+                    print("Error checking user connections, failed.")
+                    self.socket_handle()
+                print("Waiting for Client")
+        return
+    
+    def socket_handle(self):
+        if self.drone_on == False:
+            self.udp_sock.close()
 
 
 
