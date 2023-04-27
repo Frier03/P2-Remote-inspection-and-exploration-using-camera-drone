@@ -2,10 +2,10 @@ class Drone:
     def __init__(self, name):
         self.name = name
         self.cmd_queue = []
-        self.ports = { "video": None }
+        self.port = None
 
 class Relay:
-    def __init__(self, name, active_relays) -> None:
+    def __init__(self, name, active_relays):
         self.name = name
         self.drones = {}
         self.active_relays = active_relays
@@ -16,7 +16,7 @@ class Relay:
         used_ports = set()
         for relay in self.active_relays.values():
             for drone in relay.drones.values():
-                used_ports.update(drone.ports.values())
+                used_ports.update(drone.port)
 
         # usable ports for video streams.
         for port in range(52222, 53334):
@@ -28,7 +28,7 @@ class Relay:
 
         # Create new Drone instance
         drone = Drone(name)
-        drone.ports["video"] = video_port
+        drone.port = video_port
         self.drones[name] = drone
 
         return video_port
@@ -38,6 +38,8 @@ class Relay:
 
 
 
+
+'''
 if __name__ == '__main__':
     # New relay connects { "name": "Relay_4444" }
     relay0001 = Relay("Relay_0001")
@@ -60,3 +62,5 @@ if __name__ == '__main__':
         print(ports)
         from time import sleep
         sleep(2)
+
+'''

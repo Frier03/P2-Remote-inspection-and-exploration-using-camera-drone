@@ -7,45 +7,52 @@ class video_server:
         self.UDP_port = UDP_port
 
     def start(self):
-        self.local_host = '' #LocalHost depending on which device runs the server
+        self.local_host = '0.0.0.0' #LocalHost depending on which device runs the server
         self.connections = []
-        print(f'Server Addres: {socket.gethostbyname(socket.gethostname())}')
 
         #Define UDP Address and Socket
         self.local_udp_addr = (self.local_host, self.UDP_port) #UDP Address
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP Socket for stream
         self.udp_sock.bind(self.local_udp_addr) #Bind the udp socket to the UDP Address
+        print(f'Server Address: {self.local_udp_addr}')
 
-        stream_thread = threading.Thread(target=self.check_conn(), args=())
-        stream_thread.start()
+        self.check_conn()
 
     def handle_stream(self):
         while len(self.connections) == 2: #While both 
             try:
-                streamAddressPair = self.udp_sock.recvfrom(2048)
+                data, relay = self.udp_sock.recvfrom(2048)
+
             except Exception as e:
                 print(f'Could not retrieve message: {e}')
+                self.udp_sock.close()
             
             try:
-                for i in self.connections:
-                    if i != streamAddressPair[1]:
-                        self.udp_sock.sendto(streamAddressPair, i)
+                for conn in self.connections:
+                    if conn != relay:
+                        self.udp_sock.sendto(data, conn)
+
             except Exception as c:
                 print(f"Could not send message: {c}")
+                self.udp_sock.close()
+        
+        print("Connection closed")
                 
 
     def check_conn(self):
         while len(self.connections) < 2: #Wait for both user and relaybox
             try:
-                bytesAddressPair = self.udp_sock.recvfrom(2048)
+                data, address = self.udp_sock.recvfrom(2048)
             except Exception as e:
                 print(f'Could not retrieve message: {e}')
+                self.udp_sock.close()
 
-            if bytesAddressPair[1] not in self.connections: #If the connection is not in the list
-                self.connections.append(bytesAddressPair)
+            if address not in self.connections: #If the connection is not in the list
+                self.connections.append(address)
+                print(f"Connections: {self.connections}")
         
         print("Both have connected via udp")
-        self.handle_stream() #Rewire thread
+        self.handle_stream()
 
 
 
