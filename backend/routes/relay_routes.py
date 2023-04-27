@@ -110,7 +110,7 @@ def handle(drone: DroneModel):
 
     # Create a Server instance which handles the video connection
     udp_object = video_server(UDP_port = port)
-    stream_thread = threading.Thread(target=udp_object.start(), args=())
+    stream_thread = threading.Thread(target=udp_object.start, args=())
     stream_thread.start()
 
     #print(relay.drones[drone.name].name)

@@ -1,23 +1,20 @@
-import withAuthorization from "../../HOC";
+import withAuthorization from "../../authzVerify";
+import RelaysSidebar from "./components/RelaysSidebar";
+import "./Root.css";
 
 function RootForm({ authorizationStatus }) {
-  const handleLogout = () => {
-    window.location.href = '/logout';
-  };
   if (authorizationStatus === "Authorized") {
     return (
       <>
-        <h1>Authorized</h1>
-        <button onClick={handleLogout}>
-        Logout
-        </button>
+        <div>
+          <RelaysSidebar/>
+        </div>
       </>
     );
   }
 }
 
 const AuthorizedRootForm = withAuthorization(RootForm, "/login");
-
 function RenderAuthorizedContent() {
   return (
     <>

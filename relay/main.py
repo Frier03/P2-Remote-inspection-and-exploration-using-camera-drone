@@ -165,8 +165,9 @@ class Relaybox:
         object = self.drones[name].get('objectId')
         self.used_control_ports.remove(object.control_port)
 
-        # Close the control socket to allow a new drone to use it.
+        # Close the control and video socket to allow a new drone to use it.
         object.control_socket.close()
+        object.video_socket.close()
 
         del object
         self.drones.pop(name)
@@ -182,7 +183,7 @@ class Relaybox:
     
     def get_control_port(self) -> int:
         # All 255 usable drone status ports, since its from 3400 to, but not including, 3656 alas a total of 255.
-        for control_port in range(3400, 3656):
+        for control_port in range(50400, 50656):
             
             # Raise exception if the maximum amount of control ports have been used.
             if len(self.used_control_ports) == 255:
@@ -223,7 +224,7 @@ class Drone:
         logging.debug("Entered SDK mode")
 
         logging.debug(f"[{self.name}] Telling drone to use port {self.video_port} for streamon...")
-        self.set_drone_streamon_port()
+        self.set_drone_ports()
         logging.debug(f"{self.name} used {self.video_port} port for streamon")
 
         logging.debug(f"[{self.name}] Enabling streamon...")
@@ -258,7 +259,7 @@ class Drone:
             except Exception as error:
                 logging.error(f"Could not send video feed to backend {error}")
 
-            # Do something with the video feed
+            self.video_socket.sendto((video_feed, 'utf-8'), ('192.168.137.100', 6969))
 
     def get_video_port(self):
         query = { 'name': self.name, 'parent': self.parent }
@@ -271,15 +272,21 @@ class Drone:
         port = response.json().get('video_port')
         self.video_port = port
 
-    def set_drone_streamon_port(self):
+    def set_drone_ports(self):
+        # the ip should be set '', but when running it on a local machine this socket address is already 
+        # being used by the video_server class.
         self.video_socket.bind(('127.0.0.1', self.video_port))
         self.send_control_command(f"port {self.control_port} {self.video_port}", self.default_buffer_size)
         
-    def send_control_command(self, command: str, buffer_size: int) -> str:
+    def send_control_command(self, command: str, buffer_size: int, port_set_flag: bool = False) -> str:
         # The port does not really matter in terms of functionallity.
         self.control_socket.sendto(bytes(command, 'utf-8'), (self.host, self.control_port)) 
-        status = self.control_socket.recvfrom(buffer_size)
-        return status
+
+        if port_set_flag == True:
+            status = self.control_socket.recvfrom(buffer_size)
+            return status
+    
+        return None
     
     def close_socket(socket):
         socket.close()

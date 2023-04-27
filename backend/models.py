@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 class RelayHandshakeModel(BaseModel):
     name: str
-    password: str
+    password: str = None
     
 class RelayHeartbeatModel(BaseModel):
     name: str

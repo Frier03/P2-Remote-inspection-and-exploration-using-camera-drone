@@ -1,4 +1,5 @@
 from fastapi import HTTPException, status, APIRouter, Depends
+import json
 
 from helper_functions import generate_access_token
 from mongodb_handler import get_mongo
@@ -6,6 +7,19 @@ from models import UserModel, NewCMDModel
 from routes.relay_routes import active_relays
 
 frontend_router = APIRouter()
+
+@frontend_router.get("/relayboxes/all") # Retrieve all data backend has for relayboxes
+def handle():
+    # Find that relay object now
+
+    result = {}
+    for relay_object in active_relays.values():
+        result[relay_object.name] = {}
+        for drone_key in relay_object.drones.keys():
+            drone = relay_object.drones[drone_key]
+            result[relay_object.name][drone_key] = { "name": drone.name, "ports": drone.ports }
+            
+    return result
 
 @frontend_router.post("/new_cmd_for_drone")
 def handle(cmd_model: NewCMDModel): # relay_name, drone_name
@@ -28,7 +42,7 @@ def handle(cmd_model: NewCMDModel): # relay_name, drone_name
         )
     drone = relay.drones[drone_name] # gets drone object id from relay object id
     drone.cmd_queue.append(cmd)
-    return "OK"
+    return { "message": "OK" }
 
 @frontend_router.get("/protected")
 def handle():

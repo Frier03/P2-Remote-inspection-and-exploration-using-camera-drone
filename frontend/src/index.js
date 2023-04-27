@@ -1,24 +1,24 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import React from "react";
+import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import './index.css';
-import Root from './pages/root/Root';
-import Login from './pages/login/Login'
-import Logout from './pages/logout/Logout'
+import "./index.css";
+import Root from "./pages/root/Root";
+import Login from "./pages/login/Login";
+import Logout from "./pages/logout/Logout";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Root />} />
-          <Route path="login" element={<Login />} />
-          <Route path="logout" element={<Logout />} />
-          <Route path="*" element={<h1>No Page Found</h1>} />
+        <Route path="login" element={<Login />} />
+        <Route path="logout" element={<Logout />} />
+        <Route path="*" element={<h1>No Page Found</h1>} />
       </Routes>
     </BrowserRouter>
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<App />);
