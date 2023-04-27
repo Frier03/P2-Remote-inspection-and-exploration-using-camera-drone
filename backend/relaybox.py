@@ -16,7 +16,7 @@ class Relay:
         used_ports = set()
         for relay in self.active_relays.values():
             for drone in relay.drones.values():
-                used_ports.update(drone.port)
+                used_ports.add(drone.port)
 
         # usable ports for video streams.
         for port in range(52222, 53334):
