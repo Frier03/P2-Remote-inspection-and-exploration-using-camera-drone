@@ -17,7 +17,7 @@ def handle():
         result[relay_object.name] = {}
         for drone_key in relay_object.drones.keys():
             drone = relay_object.drones[drone_key]
-            result[relay_object.name][drone_key] = { "name": drone.name, "ports": drone.ports }
+            result[relay_object.name][drone_key] = { "name": drone.name, "ports": drone.port }
             
     return result
 
