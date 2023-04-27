@@ -28,7 +28,7 @@ class Relaybox:
         self.heartbeat_interval = 2 # loop interval (seconds)
         self.heartbeat_response_time = 0
     
-    
+
     def connect_to_backend(self) -> None:
         try:
             query = { 'name': self.name, 'password': self.password }
@@ -228,6 +228,8 @@ class Drone:
 
         self.drone_active = True
 
+        self.command_received = False
+
 
     def start(self):
         logging.info(f"Starting [{self.name}, {self.host}] on {self.parent}")
@@ -243,16 +245,21 @@ class Drone:
         # Wait 1 seconds for the SDK mode to start.
         sleep(1)
 
-        logging.debug(f"[{self.name}] Telling drone to use port {self.video_port} for streamon...")
-        self.set_drone_ports()
-        logging.debug(f"{self.name} used {self.video_port} port for streamon")
+        if self.drone_active == True:
+            logging.debug(f"[{self.name}] Telling drone to use port {self.video_port} for streamon...")
+            self.set_drone_ports()
+            logging.debug(f"{self.name} used {self.video_port} port for streamon")
 
-        logging.debug(f"[{self.name}] Sending Handshake Packet to Backend and awaiting response...")
-        self.RTS_handshake()
+        if self.drone_active == True:
+            logging.debug(f"[{self.name}] Sending Handshake Packet to Backend and awaiting response...")
+            self.RTS_handshake()
+
+        sleep(1)
 
         if self.drone_active == True:
             logging.debug(f"[{self.name}] Enabling streamon...")
             self.send_control_command("streamon", 2048)
+
             logging.debug("Enabled streamon")
 
             #Start Threads for each process
@@ -350,8 +357,9 @@ class Drone:
             status, addr = self.control_socket.recvfrom(buffer_size)
             logging.info(f'Status {status} from {addr}')
             return status
-    
-        return None
+        
+        return 'no return'
+
 
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
