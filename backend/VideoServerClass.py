@@ -14,7 +14,7 @@ class video_server:
         self.local_udp_addr = (self.local_host, self.UDP_port) #UDP Address
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP Socket for stream
         self.udp_sock.bind(self.local_udp_addr) #Bind the udp socket to the UDP Address
-        print(f'Server Addres: {self.local_udp_addr}')
+        print(f'Server Address: {self.local_udp_addr}')
 
         self.check_conn()
 
