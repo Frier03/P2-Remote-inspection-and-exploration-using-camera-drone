@@ -165,12 +165,12 @@ class Relaybox:
         object = self.drones[name].get('objectId')
         self.used_control_ports.remove(object.control_port)
 
+        # Set to False to end the threads: vid, status and command. This has to be done before closing the sockets to avoid a socket error.
+        object.drone_active = False
+
         # Close the control and video socket to allow a new drone to use it.
         object.control_socket.close()
         object.video_socket.close()
-
-        # Set to False to end the threads: vid, status and command.
-        object.drone_active = False
 
         del object
         self.drones.pop(name)
@@ -216,7 +216,6 @@ class Drone:
 
         self.drone_active = True
 
-
     def start(self):
         logging.info(f"Starting {self.name} on {self.parent}")
         
@@ -238,11 +237,11 @@ class Drone:
 
         #Start Threads for each process
         logging.debug(f"[{self.name}] Starting video thread")
-        vidthread = threading.Thread(target=self.video_thread()).start()
+        video_thread = threading.Thread(target=self.video_thread).start()
         logging.debug(f"[{self.name}] Starting status thread")
-        statthread = threading.Thread(target=self.status_thread()).start()
+        status_thread = threading.Thread(target=self.status_thread).start()
         logging.debug(f"[{self.name}] Starting rc thread")
-        commandthread = threading.Thread(target=self.rc_thread()).start()
+        command_thread = threading.Thread(target=self.rc_thread).start()
 
         sleep(1)
 
@@ -252,19 +251,38 @@ class Drone:
         ...
 
     def rc_thread(self):
+        query = { 'name': self.name, 'parent': drone.parent }
+        response = requests.post(f'{BACKEND_URL}/cmd_queue', json=query)
+
+
+
         # Ask API for rc cmds on this drone using drone name and relay name
         # Send collected rc cmds to drone
         ...
 
+    def backend_handshake(self):
+        ...
+
+
+
     def video_thread(self):
         while self.drone_active == True:
-            try:
-                video_feed, addr = self.video_socket.recvfrom(self.default_buffer_size)
-            except Exception as error:
-                logging.error(f"Could not send video feed to backend {error}")
 
-            # Send video feed to backend, with the specific video feed port, given by the backend in get_video_port().
-            self.video_socket.sendto(video_feed, ('192.168.137.100', self.video_port))
+            if self.drone_active == True:
+                try:
+                    video_feed, addr = self.video_socket.recvfrom(self.default_buffer_size)
+                except:
+                    logging.error('Socket have already been closed: 1')
+
+            if self.drone_active == True:
+                try:
+                    # Send video feed to backend, with the specific video feed port, given by the backend in get_video_port().
+                    self.video_socket.sendto(video_feed, ('192.168.137.100', self.video_port))
+                except:
+                    logging.error('Socket have already been closed: 2')
+        
+        logging.debug('Finished videothread')
+ 
 
     def get_video_port(self):
         query = { 'name': self.name, 'parent': self.parent }
@@ -283,11 +301,11 @@ class Drone:
         self.video_socket.bind(('', self.video_port))
         self.send_control_command(f"port {self.control_port} {self.video_port}", self.default_buffer_size, True)
         
-    def send_control_command(self, command: str, buffer_size: int, port_set_flag: bool = False) -> str:
+    def send_control_command(self, command: str, buffer_size: int, return_flag: bool = False) -> str:
         # Send to the tello drone port
         self.control_socket.sendto(bytes(command, 'utf-8'), (self.host, 8889)) 
 
-        if port_set_flag == True:
+        if return_flag == True:
             logging.debug('Receiving status')
             status, addr = self.control_socket.recvfrom(buffer_size)
             logging.info(f'Status {status} from {addr}')
