@@ -8,7 +8,7 @@ from time import sleep, time
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-BACKEND_URL = 'http://192.168.137.100:8000/v1/api/relay' # http://ip
+BACKEND_URL = 'http://192.168.137.187:8000/v1/api/relay' # http://ip
 ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78']
 
 class Relaybox:
@@ -223,7 +223,7 @@ class Drone:
         self.video_port = None #NOTE: video_port for relay -> backend
         
         # Backend video port:
-        self.BACKEND_VIDEO_PORT = '192.168.137.100'
+        self.BACKEND_VIDEO_PORT = '192.168.137.187'
 
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
@@ -252,7 +252,7 @@ class Drone:
         logging.debug("Got port")
 
         logging.debug(f"[{self.name}] Entering SDK mode...")        
-        self.send_control_command(f"command", 128, self.response_socket)
+        self.send_control_command(f"command", self.default_buffer_size)
         logging.debug("Entered SDK mode")
 
         # Wait 1 seconds for the SDK mode to start.
@@ -271,9 +271,11 @@ class Drone:
 
         if self.drone_active == True:
             logging.debug(f"[{self.name}] Enabling streamon...")
-            self.send_control_command("streamon", 2048, self.status_socket)
+            self.send_control_command("streamon", self.default_buffer_size)
 
             logging.debug("Enabled streamon")
+
+            self.send_control_command("speed 60", self.default_buffer_size)
 
             #Start Threads for each process
             logging.debug(f"[{self.name}] Starting video thread")
@@ -287,20 +289,60 @@ class Drone:
     def status_thread(self):
         # Ask drone for status [battery, yaw, altitude...]
         # Send collected status to API
+
         while self.drone_active == True:
             status, addr = self.status_socket.recvfrom(2048)
-            logging.info(f'{self.name} status: {status}')
-            sleep(1)
+            sleep(0.1)
+
+            query = {'name': self.name, 'parent': self.parent, 'status_information': status}
+            status_message = requests.post(f'{BACKEND_URL}/drone/status_information', json=query)
+
 
 
     def rc_thread(self):
-        # Query should be changed
-        query = { 'name': self.name, 'parent': None }
-        command_response = requests.post(f'{BACKEND_URL}/cmd_queue', json=query)
 
-        # Ask API for rc cmds on this drone using drone name and relay name
-        # Send collected rc cmds to drone.
-        ...
+        takeoff = False
+        takeoff_query = { 'name': self.name, 'parent': self.parent }
+
+        while takeoff == False:
+            sleep(1)
+            try:
+                should_takeoff = requests.get(f'{BACKEND_URL}/drone/should_takeoff', json=takeoff_query)
+            except:
+                logging.error(f'Could not reach {BACKEND_URL}/drone/should_takeoff endpoint, retrying in 2 seconds.')
+                sleep(2)
+                self.rc_thread()
+            
+            logging.debug(should_takeoff)
+
+            if '<Response [200]>' == str(should_takeoff):
+                takeoff = self.send_control_command('takeoff', self.default_buffer_size)
+                logging.debug(f'Completed takeoff for {self.name} at {self.parent}')
+
+                takeoff = True
+                should_takeoff = requests.post(f'{BACKEND_URL}/drone/successful_takeoff', json=takeoff_query)
+
+        command_queue = { 'name': self.name, 'parent': self.parent}
+
+        # Command queue
+        while self.drone_active == True:
+            rc_commands = requests.get(f'{BACKEND_URL}/cmd_queue', json=command_queue)
+
+            logging.debug(rc_commands)
+
+            commands: dict = rc_commands.json()
+            commands = commands.get('message')
+
+            logging.debug(commands)
+
+            drone_commands = f'rc {commands[0]} {commands[1]} {commands[2]} {commands[3]}'
+
+            logging.debug(f'Commands: {drone_commands}')
+
+            self.send_rc_command(drone_commands, self.default_buffer_size)
+
+        self.send_control_command('land', self.default_buffer_size)
+        logging.debug('landed')
 
     
     def RTS_handshake(self) -> None:
@@ -357,10 +399,10 @@ class Drone:
         # the ip should be set '', but when running it on a local machine this socket address is already 
         # being used by the video_server class.
         self.video_socket.bind(('', self.video_port))
-        self.send_control_command(f"port {self.status_port} {self.video_port}", self.default_buffer_size, self.response_socket)
+        self.send_control_command(f"port {self.status_port} {self.video_port}", self.default_buffer_size)
     
 
-    def send_control_command(self, command: str, buffer_size: int, command_socket: socket) -> None:
+    def send_control_command(self, command: str, buffer_size: int) -> None:
         try:
             while True:
                 
@@ -376,6 +418,7 @@ class Drone:
                 except OSError:
                     logging.debug(f'Error did not receive response from {self.name} at {self.host}, resending new command: {command} in 2s.')
                     sleep(2)
+                    ...
 
                 if response != None:
                     logging.debug(f'Received response: {response} from {self.name} at {self.host}')
@@ -383,13 +426,24 @@ class Drone:
                     
                     if ('ok' == decoded_response) and (addr[0] == self.host):
                         logging.debug(f'{self.name}, returned ok')
-                        return
+                        return True
                 
                 logging.debug('No response was received in the given time.')
 
         except Exception as socket_error:
             logging.error(f'Error: {socket_error}')
             
+
+    def send_rc_command(self, command: str, buffer_size: int) -> None:
+        try:
+            # Send command and await response.
+            logging.debug(f'Sending command: {command} to {self.name} at {self.host} and awaiting response.')
+            self.response_socket.sendto(bytes(command, 'utf-8'), (self.host, 8889)) 
+
+        except OSError:
+            #logging.debug(f'Error did not receive response from {self.name} at {self.host}, resending new command: {command} in 2s.')
+            #sleep(2)
+            ...
 
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
