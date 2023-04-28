@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Cookies from "js-cookie";
-import "./RelaysSidenav.css";
+import "./Sidenav.css";
+import "../utilities/keyboardlistener";
 
-function RelaysSidenav() {
-  const [relayData, setRelayData] = useState("");
-  const [connectDrone, setConnectDrone] = useState("");
-
+function Sidenav(props) {
 
   useEffect(() => {
     fetchRelayData();
@@ -13,7 +11,6 @@ function RelaysSidenav() {
       fetchRelayData();
     }, 1000);
 
-    // Clean up the worker and interval when the component unmounts
     return () => {
       clearInterval(intervalId);
     };
@@ -31,29 +28,38 @@ function RelaysSidenav() {
     })
       .then((response) => response.json())
       .then((data) => {
-        setRelayData(data);
+        props.setRelayData(data);
       });
   }
 
   function onClickConnectedbtn(key) {
-    setConnectDrone(key)
+    const [relay, drone] = key.split("-")
+
+    if(Cookies.get("relayName") === undefined && Cookies.get("droneName") === undefined){
+      Cookies.set("relayName", relay);
+      Cookies.set("droneName", drone);
+      props.setConnectDrone(key);
+    } else {
+      Cookies.remove("relayName")
+      Cookies.remove("droneName")
+      props.setConnectDrone('');
+    }
+
   }
 
   return (
     <>
       <div id="sidenav" className="sidenav">
         <ul>
-          {console.log(relayData)}
-          {relayData &&
-            Object.keys(relayData).map((relayName) => (
+          {props.relayData && Object.keys(props.relayData).map((relayName) => (
               <li key={relayName}>
                 <h3>{relayName}</h3>
                 <ul>
-                  {Object.keys(relayData[relayName]).map((droneName) => (
+                  {Object.keys(props.relayData[relayName]).map((droneName) => (
                     <li key={`${relayName}-${droneName}`}>
                       {droneName}
                       <button className="connect-btn" onClick={() => {onClickConnectedbtn(`${relayName}-${droneName}`)}}>
-                      {connectDrone === `${relayName}-${droneName}` ? "Selected" : "Select"}</button>
+                      {props.connectDrone === `${relayName}-${droneName}` ? "Selected" : "Select"}</button>
                     </li>
                   ))}
                 </ul>
@@ -65,4 +71,4 @@ function RelaysSidenav() {
   );
 }
 
-export default RelaysSidenav;
+export default Sidenav;

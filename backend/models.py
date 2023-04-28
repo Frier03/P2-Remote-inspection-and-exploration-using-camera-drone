@@ -10,6 +10,11 @@ class RelayHeartbeatModel(BaseModel):
 class DroneModel(BaseModel):
     name: str
     parent: str
+
+class DroneStatusInformationModel(BaseModel):
+    name: str
+    parent: str
+    status_information: bytes
     
 class TokenModel(BaseModel):
     access_token: str
@@ -22,4 +27,4 @@ class UserModel(BaseModel):
 class NewCMDModel(BaseModel):
     relay_name: str
     drone_name: str
-    cmd: str
+    cmd: list
