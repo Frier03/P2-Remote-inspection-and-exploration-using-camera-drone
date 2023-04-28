@@ -1,7 +1,7 @@
 class Drone:
     def __init__(self, name) -> None:
         self.name: str = name
-        self.cmd_queue: list = []
+        self.cmd_queue: list = [0,0,0,0]
         self.port: int = None
         self.airborn: bool = False
         self.should_takeoff: bool = False

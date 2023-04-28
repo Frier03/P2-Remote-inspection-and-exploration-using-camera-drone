@@ -38,10 +38,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsI
 ###
 POST http://localhost:8000/v1/api/frontend/drone/takeoff
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MjY3MDcxOH0.C8s3DK5DEsyV1apO464KFBlNOdGsnERHsOoCp1PCyCM
-
 Content-Type: application/json
 
 {
-    "relay_name": "relay_0001",
-    "drone_name": "drone_01"
+    "name": "drone_001",
+    "parent": "relay_0001"
 }
