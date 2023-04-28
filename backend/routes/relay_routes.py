@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status, APIRouter, Depends
-import time
+import time, copy
 
 from helper_functions import generate_access_token
 from mongodb_handler import get_mongo
@@ -10,12 +10,14 @@ import threading
 from VideoServerClass import video_server
 
 relay_router = APIRouter()
-active_relays = {}
-active_sessions = {}
+active_relays = {} #structured as {relay_name: relay_object}
+active_sessions = {} #Structured as {port: server_object}
+
 
 @relay_router.post("/")
 def handle():
     pass
+
 
 @relay_router.get('/cmd_queue')
 def handle(relay: RelayHeartbeatModel): # Relay wants every drone cmd_queue that is linked to him
@@ -30,6 +32,7 @@ def handle(relay: RelayHeartbeatModel): # Relay wants every drone cmd_queue that
         drones_cmd[drone.name] = drone.cmd_queue
 
     return drones_cmd
+
 
 @relay_router.get("/heartbeat")
 def handle(relay: RelayHeartbeatModel): # Relay should send a heartbeat every 2sec
@@ -48,6 +51,30 @@ def handle(relay: RelayHeartbeatModel): # Relay should send a heartbeat every 2s
 
     return { "message": f"Hello {relay.name}", f"{relay.name}": { "drones": data.drones } }
 
+def timeout_check(relay):
+    print(f"Entered Timout Check for {relay}")
+    while True:
+        if relay.last_heartbeat_received != None:
+            time_stamp = copy.deepcopy(relay.last_heartbeat_received)
+            time.sleep(5) #Allow a 5 second timeout
+            if relay.last_heartbeat_received == time_stamp:
+                print(f"Relaybox {relay.name} has Timed Out. Disconnecting items.\n")
+
+                # Remove and Disconnect Every drone connected to the specific relay
+                reference_dictionary = relay.drones.copy()
+
+                # We make a copy to avoid iteration through a changing dictionary (Drones are being removed from relay.drones)
+                for drone_name in reference_dictionary.keys():
+                    disconnect_drone(relay, drone_name)
+                
+                # Remove Relay object and from active sessions
+                active_relays.pop(relay.name)
+
+                del relay
+                print(f"Active Relays: {active_relays.keys()} \nActive Sessions: {active_sessions.keys()}\n")
+                break
+
+
 @relay_router.post("/drone/disconnected")
 def handle(drone: DroneModel):
     # Check if drones parent (relay) is not online/exist
@@ -61,35 +88,40 @@ def handle(drone: DroneModel):
         raise HTTPException(
             detail=f"{drone.name} does not exist in {active_relays[drone.parent].name}",
             status_code=status.HTTP_409_CONFLICT)
-    
+
     # Find that relay object now
     relay = active_relays[drone.parent]
 
+    # Call Disconnect function
+    disconnect_drone(relay, drone.name)
+
+def disconnect_drone(relay, drone_name): #Includes relay object and specific drone name for compatibility in relay timeout
+
     # Find the specific port belonging to this drone
-    port = relay.drones[drone.name].port
+    port = relay.drones[drone_name].port
 
     #Find the specific server object in session dictionary: {'port': objectId}
     server_object = active_sessions[port]
 
     #Close Socket in the server session
     try:
-        print(f"Closing Socket belonging to {server_object}")
-        server_object.drone_on = False
-        server_object.udp_sock.close()
+        print(f"Closing Socket belonging to {server_object}\n")
+        server_object.drone_on = False #Stop all continued processing
+        server_object.udp_sock.close() #Close the socket and handle exceptions in object
     except:
-        print("Could not close socket in relay routes.")
+        print("Could not close socket in Video Server Instance")
 
     #Delete Server Session Object
     del server_object
 
     #Remove session from dictionary
     active_sessions.pop(port)
-    print(f"Active sessions: {active_sessions}")
+    print(f"Active Relays: {active_relays.keys()} \nActive Sessions: {active_sessions.keys()}\n")
     
     # Delete the drone object on relay drones
-    del relay.drones[drone.name]
+    del relay.drones[drone_name]
 
-    return { "message": f"Deleted {drone.name} on {relay.name}"}
+    return { "message": f"Deleted {drone_name} on {relay.name}"}
 
 
 @relay_router.post("/drones")
@@ -110,8 +142,11 @@ def handle(relay: RelayHandshakeModel):
     
     return result
 
+
 @relay_router.get("/new_drone")
 def handle(drone: DroneModel):
+    drone_exists = False
+
     # Check if drones parent (relay) is not online/exist
     if drone.parent not in active_relays.keys():
         raise HTTPException(
@@ -120,23 +155,26 @@ def handle(drone: DroneModel):
     
     # Check if drone name already exist in the relay drones list
     if drone.name in active_relays[drone.parent].drones:
-        raise HTTPException(
-            detail=f"{drone.name} already exist or online",
-            status_code=status.HTTP_409_CONFLICT)
+        drone_exists = True # Marks that the drone is already in the system (In the case that the relay disconnects and reconnects within 2 seconds)
         
     # Find that relay object now
     relay = active_relays[drone.parent]
     
+    if drone_exists == True:
+        # Remove Exisiting Drone From the System
+        print("Removing Existing Drone From System because of relaybox reconnect\n")
+        disconnect_drone(relay, drone.name)
+
     # Add new drone to relay and get available port
     port = relay.add_drone(drone.name)
-    print(f"Drone port {port}")
+    print(f"Drone Port {port}")
 
     # Create a Server instance which handles the video connection
     video_feed_instance = video_server(UDP_port = port)
 
     #Add object and port to dictionary
     active_sessions[port] = video_feed_instance
-    print("Active Sessions: ", active_sessions)
+    print(f"Active Sessions: {active_sessions}\n")
 
     #print(relay.drones[drone.name].name)
     return { "video_port": port }
@@ -148,13 +186,19 @@ def handle(relay: RelayHandshakeModel, mongo: object = Depends(get_mongo)):
          raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED)
 
-    # Initialize new Relaybox Class
-    relay = Relay(relay.name, active_relays)
+    if relay.name not in active_relays: #If the Relay box quickly disconnected and reconnected within 5 seconds
+        print("New Relay Box Connected \n")
+        # Initialize new Relaybox Class
+        relay = Relay(relay.name, active_relays)
 
-    # Store new active relay
-    active_relays[relay.name] = relay
+        # Store new active relay
+        active_relays[relay.name] = relay
+
+        timeout_thread = threading.Thread(target=timeout_check, args=(relay,))
+        timeout_thread.start()
+    else:
+        print("Existing Relay Box Connected \n")
 
     # Generate new HS256 access token
     token = generate_access_token(data={'sub': relay.name}, minutes=24*60)
     return {"access_token": f"Bearer {token}"}
-

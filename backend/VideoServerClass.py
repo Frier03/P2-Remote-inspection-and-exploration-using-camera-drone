@@ -75,7 +75,7 @@ class video_server:
 
             else:
                 if self.drone_on == False:
-                    print("Error checking connections, failed.")
+                    print("Drone Disconnected, Video Session Closed.")
                     break
 
                 print("Waiting for Client")
