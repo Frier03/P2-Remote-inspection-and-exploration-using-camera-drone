@@ -4,6 +4,8 @@ import withAuthorization from "../../authzVerify";
 
 function LogoutForm({ authorizationStatus }) {
   useEffect(() => {
+    Cookies.remove('relayName')
+    Cookies.remove('droneName')
     handleLogout();
   }, []);
   if(authorizationStatus === "Authorized"){

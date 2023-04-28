@@ -22,4 +22,4 @@ class UserModel(BaseModel):
 class NewCMDModel(BaseModel):
     relay_name: str
     drone_name: str
-    cmd: str
+    cmd: list

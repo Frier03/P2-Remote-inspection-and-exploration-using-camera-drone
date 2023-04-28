@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import "./RelaysSidenav.css";
+import "../utilities/keyboardlistener"
 
 function RelaysSidenav() {
   const [relayData, setRelayData] = useState("");
   const [connectDrone, setConnectDrone] = useState("");
-
-
+  
   useEffect(() => {
     fetchRelayData();
     const intervalId = setInterval(() => {
@@ -36,7 +36,19 @@ function RelaysSidenav() {
   }
 
   function onClickConnectedbtn(key) {
-    setConnectDrone(key)
+    let relay = key.split('-')[0];
+    let drone = key.split('-')[1];
+
+    if(Cookies.get("relayName") == undefined && Cookies.get("droneName") == undefined){
+      Cookies.set("relayName", relay);
+      Cookies.set("droneName", drone);
+      setConnectDrone(key);
+    } else {
+      Cookies.remove("relayName")
+      Cookies.remove("droneName")
+      setConnectDrone('');
+    }
+
   }
 
   return (

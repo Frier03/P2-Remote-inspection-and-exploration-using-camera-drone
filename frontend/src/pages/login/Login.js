@@ -6,7 +6,8 @@ function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
-
+  Cookies.remove('relayName')
+  Cookies.remove('droneName')
   function handleSubmit(event) {
     event.preventDefault();
 

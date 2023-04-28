@@ -1,8 +1,11 @@
 class Drone:
-    def __init__(self, name):
-        self.name = name
-        self.cmd_queue = []
-        self.port = None
+    def __init__(self, name) -> None:
+        self.name: str = name
+        self.cmd_queue: list = []
+        self.port: int = None
+        self.airborn: bool = False
+        self.should_takeoff: bool = False
+        self.should_land: bool = False 
 
 class Relay:
     def __init__(self, name, active_relays):
