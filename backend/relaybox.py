@@ -7,6 +7,16 @@ class Drone:
         self.should_takeoff: bool = False
         self.should_land: bool = False 
 
+        self.status_information: dict = {}
+        
+    
+    def set_status_information(self, status_information: bytes) -> None:
+        
+        element = status_information.decode('utf-8').split(';')[5:-1]
+
+        for item in element:
+            key, value = item.split(':')
+            self.status_information.update({key: value})
 class Relay:
     def __init__(self, name, active_relays):
         self.name = name
@@ -67,3 +77,8 @@ if __name__ == '__main__':
         sleep(2)
 
 '''
+
+if __name__ == '__main__':
+    drone = Drone("bruh_drone")
+    drone.set_status_information(b'mid:-1;x:-100;y:-100;z:-100;mpry:0,0,0;pitch:0;roll:0;yaw:0;vgx:0;vgy:0;vgz:0;templ:48;temph:50;tof:10;h:0;bat:75;baro:-9.41;time:0;agx:-9.00;agy:-1.00;agz:-998.00;\r\n')
+    print(drone.status_information)

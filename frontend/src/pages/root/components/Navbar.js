@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import "./Navbar.css";
 import Cookies from "js-cookie";
 
-function Navbar() {
-  const [username, setUsername] = useState("");
-
+function Navbar(props) {
   useEffect(() => {
     fetchUsername();
   }, []);
@@ -21,7 +19,7 @@ function Navbar() {
     })
       .then((response) => response.json())
       .then((data) => {
-        setUsername(data.message);
+        props.setUsername(data.message);
         console.log(data);
       });
   }
@@ -31,7 +29,7 @@ function Navbar() {
       <div className="navbar-top">
         <div className="flexsdisplay-top">
           <div className="navbar-username">
-            <h3>Hello {username}!</h3>
+            <h3>Hello {props.username}!</h3>
           </div>
           <div className="search-box">search test</div>
           <div className="navbar-logout">

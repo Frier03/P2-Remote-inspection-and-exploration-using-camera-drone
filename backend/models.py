@@ -10,6 +10,11 @@ class RelayHeartbeatModel(BaseModel):
 class DroneModel(BaseModel):
     name: str
     parent: str
+
+class DroneStatusInformationModel(BaseModel):
+    name: str
+    parent: str
+    status_information: bytes
     
 class TokenModel(BaseModel):
     access_token: str

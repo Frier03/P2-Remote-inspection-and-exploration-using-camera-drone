@@ -1,0 +1,28 @@
+.control-panel {
+    margin-left: 250px ;
+    padding: 25px;
+}
+
+.video-feed{
+    border-style: solid;
+    width: 100%;
+    background-color: lightgray;
+    border-radius: 5px;
+}
+
+.video-feed-container {
+    
+}
+
+.takeoff-btn, .land-btn {
+    display: inline-block;
+    border-radius: 2px;
+    margin-left: 15px;
+    background-color: lightgray;
+    border-style: solid;
+    border-color: rgb(76, 76, 76);
+} 
+
+.takeoff-btn, .land-btn:hover {
+    cursor: pointer;
+}

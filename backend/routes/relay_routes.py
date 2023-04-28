@@ -3,10 +3,8 @@ import time
 
 from helper_functions import generate_access_token
 from mongodb_handler import get_mongo
-from models import DroneModel, RelayHandshakeModel, RelayHeartbeatModel
+from models import DroneModel, RelayHandshakeModel, RelayHeartbeatModel, DroneStatusInformationModel
 from relaybox import Relay
-
-import threading
 from VideoServerClass import video_server
 
 relay_router = APIRouter()
@@ -16,6 +14,34 @@ active_sessions = {}
 @relay_router.post("/")
 def handle():
     pass
+
+@relay_router.post('/drone/status_information')
+def handle(drone: DroneStatusInformationModel):
+    # Check if drones parent (relay) is not online/exist
+    if drone.parent not in active_relays.keys():
+        raise HTTPException(
+            detail=f"{drone.parent} does not exist or is not online",
+            status_code=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if drone name does not exist in the relay drones list
+    if drone.name not in active_relays[drone.parent].drones:
+        raise HTTPException(
+            detail=f"{drone.name} does not exist in {active_relays[drone.parent].name}",
+            status_code=status.HTTP_409_CONFLICT)
+    
+    # Find that relay object now
+    relay = active_relays[drone.parent]
+
+    # get status information from drone model
+    status_information = drone.status_information
+    
+    # Find that drone object now
+    drone = relay.drones[drone.name]
+
+    # Update drone object with status information
+    drone.status_information = status_information
+
+    return { "message": "OK" }
 
 @relay_router.get('/drone/should_takeoff')
 def handle(drone: DroneModel):

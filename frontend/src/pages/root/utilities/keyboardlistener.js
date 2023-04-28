@@ -43,6 +43,9 @@ document.addEventListener("keyup", function (event) {
       case "arrowright":
         yaw_velocity = 0;
         break;
+
+      default:
+        break;
     }
 
     sendCMDToBackend([
@@ -90,6 +93,9 @@ document.addEventListener("keydown", function (event) {
 
       case "arrowright":
         yaw_velocity = vel_speed;
+        break;
+
+      default:
         break;
     }
     if (event.key.toLowerCase() === "t") {
@@ -150,4 +156,4 @@ function droneLand() {
   });
 }
 
-function isDroneAirbron() {}
+export default droneTakeoff
