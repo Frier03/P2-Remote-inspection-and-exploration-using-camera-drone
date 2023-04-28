@@ -355,7 +355,7 @@ class Drone:
 
     def set_drone_ports(self):
         # the ip should be set '', but when running it on a local machine this socket address is already 
-        # being used by the video_server class
+        # being used by the video_server class.
         self.video_socket.bind(('', self.video_port))
         self.send_control_command(f"port {self.status_port} {self.video_port}", self.default_buffer_size, self.response_socket)
     
