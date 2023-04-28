@@ -4,7 +4,7 @@ let for_back_velocity = 0;
 let left_right_velocity = 0;
 let up_down_velocity = 0;
 let yaw_velocity = 0;
-let vel_speed = 10;
+let vel_speed = 50;
 
 document.addEventListener("keyup", function (event) {
   if (
@@ -12,19 +12,19 @@ document.addEventListener("keyup", function (event) {
     Cookies.get("droneName") !== undefined
   ) {
     switch (event.key.toLowerCase()) {
-      case "w":
-        for_back_velocity = 0;
-        break;
-
-      case "s":
-        for_back_velocity = 0;
-        break;
-
       case "a":
-        left_right_velocity = 0;
+        for_back_velocity = 0;
         break;
 
       case "d":
+        for_back_velocity = 0;
+        break;
+
+      case "w":
+        left_right_velocity = 0;
+        break;
+
+      case "s":
         left_right_velocity = 0;
         break;
 
@@ -63,20 +63,20 @@ document.addEventListener("keydown", function (event) {
     Cookies.get("droneName") !== undefined
   ) {
     switch (event.key.toLowerCase()) {
-      case "w":
+      case "a":
         for_back_velocity = vel_speed;
         break;
 
-      case "s":
+      case "d":
         for_back_velocity = -vel_speed;
         break;
 
-      case "a":
-        left_right_velocity = -vel_speed;
+      case "w":
+        left_right_velocity = vel_speed;
         break;
 
-      case "d":
-        left_right_velocity = vel_speed;
+      case "s":
+        left_right_velocity = -vel_speed;
         break;
 
       case "arrowup":

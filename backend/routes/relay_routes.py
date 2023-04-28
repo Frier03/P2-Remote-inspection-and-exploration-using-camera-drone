@@ -106,18 +106,26 @@ def handle(drone: DroneModel):
 
 
 @relay_router.get('/cmd_queue')
-def handle(relay: RelayHeartbeatModel): # Relay wants every drone cmd_queue that is linked to him
-    if relay.name not in active_relays.keys(): # invalid relay name? or not active?
+def handle(drone: DroneModel): # Relay wants every drone cmd_queue that is linked to him
+    if drone.parent not in active_relays.keys(): # invalid relay name? or not active?
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Relay not found",
     )
 
-    drones_cmd = {} # { "drone_01": [vel], "drone_02": [vel]}
-    for drone in active_relays[relay.name].drones.values():
-        drones_cmd[drone.name] = drone.cmd_queue
+    # Check if drone name does not exist in the relay drones list
+    if drone.name not in active_relays[drone.parent].drones:
+        raise HTTPException(
+            detail=f"{drone.name} does not exist in {active_relays[drone.parent].name}",
+            status_code=status.HTTP_409_CONFLICT)
+    
+    # Find that relay object now
+    relay = active_relays[drone.parent]
+    
+    # Find that drone object now
+    drone = relay.drones[drone.name]
 
-    return drones_cmd
+    return { "message": drone.cmd_queue }
 
 
 @relay_router.get("/heartbeat")
