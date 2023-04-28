@@ -65,17 +65,17 @@ def handle(drone: DroneModel):
     # Find that relay object now
     relay = active_relays[drone.parent]
 
-    #Find the specific server object in session dictionary: {'port': objectId}
-    print("\nFinding Specific port for disconnected drone")
+    # Find the specific port belonging to this drone
     port = relay.drones[drone.name].port
 
-    print("\nFinding specific server session object")
+    #Find the specific server object in session dictionary: {'port': objectId}
     server_object = active_sessions[port]
 
-    print(f"Server object: {server_object}")
     #Close Socket in the server session
     try:
+        print(f"Closing Socket belonging to {server_object}")
         server_object.drone_on = False
+        server_object.udp_sock.close()
     except:
         print("Could not close socket in relay routes.")
 
@@ -137,10 +137,6 @@ def handle(drone: DroneModel):
     #Add object and port to dictionary
     active_sessions[port] = video_feed_instance
     print("Active Sessions: ", active_sessions)
-
-    #Start thread
-    stream_thread = threading.Thread(target=video_feed_instance.start, args=())
-    stream_thread.start()
 
     #print(relay.drones[drone.name].name)
     return { "video_port": port }

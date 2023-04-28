@@ -8,6 +8,8 @@ class video_server:
     def __init__(self, UDP_port):
         self.UDP_port = UDP_port
         self.drone_on = True
+        start_thread = threading.Thread(target=self.start, args=())
+        start_thread.start()
 
     def start(self):
         self.local_host = '' #LocalHost depending on which device runs the server
@@ -22,12 +24,16 @@ class video_server:
         self.check_conn()
 
     def handle_stream(self):
+        #Send confirmation Packets
+        for conn in self.connections:
+            self.udp_sock.sendto("poop".encode('utf-8'), conn)
+
         while len(self.connections) == 2 and self.drone_on == True: #While both 
             try:
                 data, relay = self.udp_sock.recvfrom(2048)
 
-            except Exception as e:
-                print(f'Could not retrieve message: {e}')
+            except Exception:
+                print(f'Could not retrieve message: Socket Most Likely Closed.')
                 return
             
             try:
@@ -44,18 +50,19 @@ class video_server:
                 return
         
         print("Connection closed")
+        if self.drone_on == True:
+            print("Client has disconnected from session")
         return
                 
 
     def check_conn(self):
         address = None
         while len(self.connections) < 2 and self.drone_on == True: #Wait for both user and relaybox
-            try:
-                if self.drone_on == True:
+            if self.drone_on == True:
+                try:
                     data, address = self.udp_sock.recvfrom(2048)
-            except Exception as e:
-                print(f'Could not retrieve message: {e}')
-                self.socket_handle()
+                except Exception as e:
+                    print('Listen or Send Cancelled: Socket Most Likely Closed.')
 
             if address != None:
                 if address not in self.connections: #If the connection is not in the list
@@ -65,17 +72,14 @@ class video_server:
             if self.drone_on == True and len(self.connections) == 2:
                 print("Both have connected via udp")
                 self.handle_stream()
+
             else:
                 if self.drone_on == False:
-                    print("Error checking user connections, failed.")
-                    self.socket_handle()
-                print("Waiting for Client")
-        return
-    
-    def socket_handle(self):
-        if self.drone_on == False:
-            self.udp_sock.close()
+                    print("Error checking connections, failed.")
+                    break
 
+                print("Waiting for Client")
+        
 
 
 '''
