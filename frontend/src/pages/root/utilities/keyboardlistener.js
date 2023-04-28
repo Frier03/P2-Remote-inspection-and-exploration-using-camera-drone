@@ -1,5 +1,5 @@
 import Cookies from "js-cookie";
-
+import config from "../../../config.json"
 let for_back_velocity = 0;
 let left_right_velocity = 0;
 let up_down_velocity = 0;
@@ -114,7 +114,7 @@ document.addEventListener("keydown", function (event) {
 });
 
 function sendCMDToBackend(cmd_velocity) {
-  fetch("http://localhost:8000/v1/api/frontend/drone/new_command", {
+  fetch(`http://${config.BASE_URL}/v1/api/frontend/drone/new_command`, {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -129,7 +129,7 @@ function sendCMDToBackend(cmd_velocity) {
 }
 
 function droneTakeoff() {
-  fetch("http://localhost:8000/v1/api/frontend/drone/takeoff", {
+  fetch(`http://${config.BASE_URL}/v1/api/frontend/drone/takeoff`, {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -143,7 +143,7 @@ function droneTakeoff() {
 }
 
 function droneLand() {
-  fetch("http://localhost:8000/v1/api/frontend/drone/land", {
+  fetch(`http://${config.BASE_URL}/v1/api/frontend/drone/land`, {
     method: "POST",
     headers: {
       Accept: "application/json",

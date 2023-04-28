@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import Cookies from 'js-cookie';
 import withAuthorization from "../../authzVerify";
+import config from "../../config.json"
 
 function LogoutForm({ authorizationStatus }) {
   useEffect(() => {
@@ -15,7 +16,7 @@ function LogoutForm({ authorizationStatus }) {
   }
 
   function handleLogout() {
-  return fetch('http://127.0.0.1:8000/v1/api/frontend/logout', {
+  return fetch(`http://${config.BASE_URL}/v1/api/frontend/logout`, {
     method: 'GET',
     headers: {
       'Authorization': `${Cookies.get('access_token')}`,

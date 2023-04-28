@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
+import config from "./config.json"
 
 async function validateToken() {
-  return fetch('http://127.0.0.1:8000/v1/api/frontend/protected', {
+  return fetch(`http://${config.BASE_URL}/v1/api/frontend/protected`, {
     method: 'GET',
     headers: {
       'Authorization': `${Cookies.get('access_token')}`,

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import "./Navbar.css";
 import Cookies from "js-cookie";
+import config from "../../../config.json"
 
 function Navbar(props) {
   useEffect(() => {
@@ -9,7 +10,7 @@ function Navbar(props) {
 
   function fetchUsername() {
     console.log("fetching username");
-    fetch("http://localhost:8000/v1/api/frontend/users/me", {
+    fetch(`http://${config.BASE_URL}/v1/api/frontend/users/me`, {
       method: "GET",
       headers: {
         Authorization: `${Cookies.get("access_token")}`,

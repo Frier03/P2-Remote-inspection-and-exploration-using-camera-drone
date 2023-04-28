@@ -10,7 +10,7 @@ function DroneControlPanel(props) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (relay && drone) {
+      if (relay && drone && props.relayData[relay][drone] !== undefined) {
         if (props.relayData[relay][drone]["airborn"] === true) {
           setTakeoffBtn(false);
           setLandBtn(true);

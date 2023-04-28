@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Cookies from "js-cookie";
 import "./Login.css";
+import config from "../../config.json"
 
 function LoginForm() {
   const [username, setUsername] = useState("");
@@ -11,7 +12,7 @@ function LoginForm() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    fetch("http://localhost:8000/v1/api/frontend/login", {
+    fetch(`http://${config.BASE_URL}/v1/api/frontend/login`, {
       method: "POST",
       headers: {
         Accept: "application/json",

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import Cookies from "js-cookie";
 import "./Sidenav.css";
 import "../utilities/keyboardlistener";
+import config from "../../../config.json"
 
 function Sidenav(props) {
 
@@ -18,7 +19,7 @@ function Sidenav(props) {
 
   function fetchRelayData() {
     console.log("fetching relay data");
-    fetch("http://localhost:8000/v1/api/frontend/relayboxes/all", {
+    fetch(`http://${config.BASE_URL}/v1/api/frontend/relayboxes/all`, {
       method: "GET",
       headers: {
         Authorization: `${Cookies.get("access_token")}`,

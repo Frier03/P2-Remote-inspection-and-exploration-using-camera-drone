@@ -6,6 +6,7 @@ from mongodb_handler import get_mongo
 from models import DroneModel, RelayHandshakeModel, RelayHeartbeatModel, DroneStatusInformationModel
 from relaybox import Relay
 from VideoServerClass import video_server
+import threading
 
 relay_router = APIRouter()
 active_relays = {} #structured as {relay_name: relay_object}
@@ -98,6 +99,8 @@ def handle(drone: DroneModel):
     
     # Find that drone object now
     drone = relay.drones[drone.name]
+
+    drone.airborn = True
 
     return { "message": "OK" }
 
