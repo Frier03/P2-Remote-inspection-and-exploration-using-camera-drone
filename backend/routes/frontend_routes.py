@@ -3,7 +3,7 @@ import json
 
 from helper_functions import generate_access_token, decode_access_token
 from mongodb_handler import get_mongo
-from models import UserModel, NewCMDModel
+from models import UserModel, NewCMDModel, DroneModel
 from routes.relay_routes import active_relays
 
 frontend_router = APIRouter()
@@ -21,7 +21,7 @@ def handle():
             
     return result
 
-@frontend_router.post("/new_cmd_for_drone")
+@frontend_router.post("/drone/new_command")
 def handle(cmd_model: NewCMDModel): # relay_name, drone_name
     relay_name = cmd_model.relay_name
     drone_name = cmd_model.drone_name
@@ -40,8 +40,17 @@ def handle(cmd_model: NewCMDModel): # relay_name, drone_name
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Drone not found",
         )
+    
     drone = relay.drones[drone_name] # gets drone object id from relay object id
-    drone.cmd_queue.append(cmd)
+
+    if not drone.airborn:
+        raise HTTPException(
+            status_code=status.HTTP_425_TOO_EARLY,
+            detail="{drone.name} is not airborn"
+        )
+
+    drone.cmd_queue = cmd
+
     return { "message": "OK" }
 
 @frontend_router.get("/protected")
@@ -76,3 +85,69 @@ def handle(req: Request):
     username = payload.get('sub')
 
     return { "message": username }
+
+@frontend_router.post("/drone/takeoff")
+def handle(drone: DroneModel):
+    if drone.parent not in active_relays.keys(): # invalid relay name? or not active?
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Relay not found"
+        )
+    
+    relay = active_relays[drone.parent] # gets relay object id
+
+    if drone.name not in relay.drones.keys(): # invalid drone name?
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Drone not found",
+        )
+    
+    drone = relay.drones[drone.name] # gets drone object id from relay object id
+    if drone.should_takeoff:
+        raise HTTPException(
+            status_code=status.HTTP_208_ALREADY_REPORTED,
+            detail="Drone is already trying to take off"
+        )
+    
+    if drone.airborn:
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Drone is already airborn"
+        )
+    drone.should_takeoff = True
+
+    return { "message": "ok"}
+
+@frontend_router.post("/drone/land")
+def handle(drone: DroneModel):
+    if drone.parent not in active_relays.keys(): # invalid relay name? or not active?
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Relay not found"
+        )
+    
+    relay = active_relays[drone.parent] # gets relay object id
+
+    if drone.name not in relay.drones.keys(): # invalid drone name?
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Drone not found"
+        )
+    
+    drone = relay.drones[drone.name] # gets drone object id from relay object id
+    if drone.should_land:
+        raise HTTPException(
+            status_code=status.HTTP_208_ALREADY_REPORTED,
+            detail="Drone is already trying to land"
+        )
+    
+    if not drone.airborn:
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Drone is not airborn"
+        )
+
+
+    drone.should_land = True
+
+    return { "message": "ok"}
