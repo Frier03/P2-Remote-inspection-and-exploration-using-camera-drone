@@ -8,7 +8,7 @@ from time import sleep, time
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-BACKEND_URL = 'http://192.168.137.187:8000/v1/api/relay' # http://ip
+BACKEND_URL = 'http://192.168.137.101:8000/v1/api/relay' # http://ip
 ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78']
 
 class Relaybox:
@@ -223,7 +223,7 @@ class Drone:
         self.video_port = None #NOTE: video_port for relay -> backend
         
         # Backend video port:
-        self.BACKEND_VIDEO_PORT = '192.168.137.187'
+        self.BACKEND_VIDEO_PORT = '192.168.137.101'
 
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
@@ -241,7 +241,7 @@ class Drone:
 
         self.drone_active = True
 
-        self.command_received = False
+        self.takeoff = False
 
 
     def start(self):
@@ -263,9 +263,12 @@ class Drone:
             self.set_drone_ports()
             logging.debug(f"{self.name} used {self.video_port} port for streamon")
 
+        # Derelict code
+        """
         if self.drone_active == True:
             logging.debug(f"[{self.name}] Sending Handshake Packet to Backend and awaiting response...")
             self.RTS_handshake()
+        """
 
         sleep(1)
 
@@ -280,69 +283,89 @@ class Drone:
             #Start Threads for each process
             logging.debug(f"[{self.name}] Starting video thread")
             video_thread = threading.Thread(target=self.video_thread).start()
+
             logging.debug(f"[{self.name}] Starting status thread")
             status_thread = threading.Thread(target=self.status_thread).start()
+
             logging.debug(f"[{self.name}] Starting rc thread")
             command_thread = threading.Thread(target=self.rc_thread).start()
+
+            logging.debug(f"[{self.name}] Starting landing thread")
+            landing_thread = threading.Thread(target=self.landing_thread).start()
 
 
     def status_thread(self):
         # Ask drone for status [battery, yaw, altitude...]
         # Send collected status to API
-
+        
         while self.drone_active == True:
             status, addr = self.status_socket.recvfrom(2048)
+
+            # We do not want to spam the backend, therefore we wait 100ms.
             sleep(0.1)
 
-            query = {'name': self.name, 'parent': self.parent, 'status_information': status}
+            query = {'name': self.name, 'parent': self.parent, 'status_information': status.decode('utf-8')}
             status_message = requests.post(f'{BACKEND_URL}/drone/status_information', json=query)
+    
+    def landing_thread(self):
+        while self.drone_active == True:
 
+            land_query = { 'name': self.name, 'parent': self.parent }
+            should_land = requests.get(f'{BACKEND_URL}/drone/should_land', json=land_query)
+            sleep(0.1)
+            logging.debug(f'Skal vi lande? {should_land}')
+
+            if '<Response [200]>' == str(should_land):
+                self.takeoff = False
+                self.send_control_command('land', self.default_buffer_size)
+
+                query = {'name': self.name, 'parent': self.parent }
+                status_message = requests.post(f'{BACKEND_URL}/drone/successful_land', json=query)
+                
+                logging.debug(f'{self.name} succesfully landed with status: {status_message}')
 
 
     def rc_thread(self):
-
-        takeoff = False
-        takeoff_query = { 'name': self.name, 'parent': self.parent }
-
-        while takeoff == False:
-            sleep(1)
-            try:
-                should_takeoff = requests.get(f'{BACKEND_URL}/drone/should_takeoff', json=takeoff_query)
-            except:
-                logging.error(f'Could not reach {BACKEND_URL}/drone/should_takeoff endpoint, retrying in 2 seconds.')
-                sleep(2)
-                self.rc_thread()
-            
-            logging.debug(should_takeoff)
-
-            if '<Response [200]>' == str(should_takeoff):
-                takeoff = self.send_control_command('takeoff', self.default_buffer_size)
-                logging.debug(f'Completed takeoff for {self.name} at {self.parent}')
-
-                takeoff = True
-                should_takeoff = requests.post(f'{BACKEND_URL}/drone/successful_takeoff', json=takeoff_query)
-
-        command_queue = { 'name': self.name, 'parent': self.parent}
-
-        # Command queue
         while self.drone_active == True:
-            rc_commands = requests.get(f'{BACKEND_URL}/cmd_queue', json=command_queue)
+            self.takeoff = False
+            takeoff_query = { 'name': self.name, 'parent': self.parent }
 
-            logging.debug(rc_commands)
+            while self.takeoff == False:
+                sleep(1)
+                try:
+                    should_takeoff = requests.get(f'{BACKEND_URL}/drone/should_takeoff', json=takeoff_query)
+                except:
+                    logging.error(f'Could not reach {BACKEND_URL}/drone/should_takeoff endpoint, retrying in 2 seconds.')
+                    sleep(2)
+                    self.rc_thread()
+                
+                logging.debug(should_takeoff)
 
-            commands: dict = rc_commands.json()
-            commands = commands.get('message')
+                if '<Response [200]>' == str(should_takeoff):
+                    takeoff = self.send_control_command('takeoff', self.default_buffer_size)
+                    logging.debug(f'Completed takeoff for {self.name} at {self.parent}')
 
-            logging.debug(commands)
+                    self.takeoff = True
+                    should_takeoff = requests.post(f'{BACKEND_URL}/drone/successful_takeoff', json=takeoff_query)
 
-            drone_commands = f'rc {commands[0]} {commands[1]} {commands[2]} {commands[3]}'
+            command_queue = { 'name': self.name, 'parent': self.parent}
 
-            logging.debug(f'Commands: {drone_commands}')
+            # Command queue
+            while (self.drone_active == True) and (self.takeoff == True):
+                rc_commands = requests.get(f'{BACKEND_URL}/cmd_queue', json=command_queue)
 
-            self.send_rc_command(drone_commands, self.default_buffer_size)
+                #logging.debug(rc_commands)
 
-        self.send_control_command('land', self.default_buffer_size)
-        logging.debug('landed')
+                commands: dict = rc_commands.json()
+                commands = commands.get('message')
+
+                #logging.debug(commands)
+
+                drone_command = f'rc {commands[0]} {commands[1]} {commands[2]} {commands[3]}'
+
+                #logging.debug(f'Commands: {drone_commands}')
+
+                self.send_rc_command(drone_command, self.default_buffer_size)
 
     
     def RTS_handshake(self) -> None:
