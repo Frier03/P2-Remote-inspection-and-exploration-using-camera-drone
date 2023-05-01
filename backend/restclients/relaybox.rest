@@ -1,0 +1,82 @@
+# Download CLIENT Rest from VS code to use this file
+
+POST http://localhost:8000/v1/api/relay/handshake
+Content-Type: application/json
+
+{
+    "name": "relay_0001",
+    "password": "123"
+}
+
+###
+
+GET http://localhost:8000/v1/api/relay/new_drone
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
+Content-Type: application/json
+
+{
+    "name": "drone_002",
+    "parent": "relay_0001"
+}
+
+###
+
+POST http://localhost:8000/v1/api/relay/drones
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
+Content-Type: application/json
+
+{
+    "name": "relay_0002"
+}
+
+###
+POST http://localhost:8000/v1/api/relay
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
+
+###
+
+GET http://localhost:8000/v1/api/relay/heartbeat
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAxIiwiZXhwIjoxNjgyNDI4NjY0fQ.D-BM0wvdCiSZp8tLSm-mZaiAv8spqqL9A33g0XjXSJk
+Content-Type: application/json
+
+{
+    "name": "relay_0001"
+}
+
+###
+POST http://localhost:8000/v1/api/relay/drone/disconnected
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wMDAyIiwiZXhwIjoxNjgwNzI2MzA4fQ.nc8cXkYfzo4bwSwenWnmFzRhYpf4UqdWWKZrFHnSPNs
+Content-Type: application/json
+
+{
+    "name": "drone_001",
+    "parent": "relay_0001"
+}
+
+###
+
+GET http://localhost:8000/v1/api/relay/cmd_queue
+Content-Type:  application/json
+
+{
+    "name": "relay_0001"
+}
+
+###
+
+GET http://localhost:8000/v1/api/relay/drone/should_takeoff
+Content-Type: application/json
+
+{
+    "name": "drone_002",
+    "parent": "relay_0001"
+}
+
+###
+POST http://localhost:8000/v1/api/relay/drone/successful_takeoff
+Content-Type: application/json
+
+{
+    "name": "drone_002",
+    "parent": "relay_0001"
+}

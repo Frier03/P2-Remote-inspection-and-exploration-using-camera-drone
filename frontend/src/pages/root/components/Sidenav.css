@@ -1,0 +1,79 @@
+/* The sidenav */
+.sidenav {
+  margin-top: 100px;
+  height: 100%;
+  width: 250px;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background-color: #38302E;
+  overflow-x: hidden;
+}
+
+/* The navigation menu links */
+.sidenav a {
+  padding: 8px 8px 8px 32px;
+  text-decoration: none;
+  font-size: 26px;
+  color: #818181;
+  display: block;
+  transition: 0.3s;
+}
+
+/* When you mouse over the navigation links, change their color */
+.sidenav a:hover {
+  color: #f1f1f1;
+}
+
+/* The drone list */
+.sidenav ul {
+  display: inline-block;
+  margin-left: 16px;
+  margin-top: 0;
+  color:lightcyan;
+  padding-left: 0;
+  list-style-type: none;
+}
+
+/* The drone list items */
+.sidenav ul li {
+  margin-top: 20px;
+}
+
+/* The "Connect" button */
+.connect-btn {
+  display: inline-block;
+  background-color: #4caf50;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  cursor: pointer;
+  margin-top: 8px;
+  margin-left: 32px;
+  font-weight: bold;
+}
+
+.connect-btn:hover {
+  background-color: #3e8e41;
+}
+
+/* Style the connect button */
+.sidenav div button {
+  border-radius: 5px;
+  background-color: #4caf50; /* Green */
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+/* On hover, change the background color of the button */
+.sidenav div button:hover {
+  background-color: #3e8e41;
+}
