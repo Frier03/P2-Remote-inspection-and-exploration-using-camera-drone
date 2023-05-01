@@ -14,7 +14,7 @@ class DroneModel(BaseModel):
 class DroneStatusInformationModel(BaseModel):
     name: str
     parent: str
-    status_information: bytes
+    status_information: str
     
 class TokenModel(BaseModel):
     access_token: str

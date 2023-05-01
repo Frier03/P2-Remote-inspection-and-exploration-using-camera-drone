@@ -45,6 +45,60 @@ def handle(drone: DroneStatusInformationModel):
 
     return { "message": "OK" }
 
+@relay_router.get('/drone/should_land')
+def handle(drone: DroneModel):
+    if drone.parent not in active_relays.keys():
+        raise HTTPException(
+            detail=f"{drone.parent} does not exist or is not online",
+            status_code=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if drone name does not exist in the relay drones list
+    if drone.name not in active_relays[drone.parent].drones:
+        raise HTTPException(
+            detail=f"{drone.name} does not exist in {active_relays[drone.parent].name}",
+            status_code=status.HTTP_409_CONFLICT)
+    
+    # Find that relay object now
+    relay = active_relays[drone.parent]
+    
+    # Find that drone object now
+    drone = relay.drones[drone.name]
+
+    if not drone.should_land:
+        raise HTTPException(
+            status_code=status.HTTP_425_TOO_EARLY,
+            detail="Drone should not land"
+        )
+    
+    yield { "message": "OK" }
+
+    drone.should_land = False
+
+@relay_router.post('/drone/successful_land')
+def handle(drone: DroneModel):
+    if drone.parent not in active_relays.keys():
+        raise HTTPException(
+            detail=f"{drone.parent} does not exist or is not online",
+            status_code=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if drone name does not exist in the relay drones list
+    if drone.name not in active_relays[drone.parent].drones:
+        raise HTTPException(
+            detail=f"{drone.name} does not exist in {active_relays[drone.parent].name}",
+            status_code=status.HTTP_409_CONFLICT)
+    
+    # Find that relay object now
+    relay = active_relays[drone.parent]
+    
+    # Find that drone object now
+    drone = relay.drones[drone.name]
+
+    drone.airborn = False
+
+    return { "message": "OK"}
+
+
+
 @relay_router.get('/drone/should_takeoff')
 def handle(drone: DroneModel):
     # Check if drones parent (relay) is not online/exist
@@ -71,14 +125,9 @@ def handle(drone: DroneModel):
             detail="Drone should not take off"
         )
     
-    try:
-        return { "message": "OK" }
+    yield { "message": "OK" }
     
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
-    
-    finally:
-        drone.should_takeoff = False
+    drone.should_takeoff = False
 
 @relay_router.post('/drone/successful_takeoff')
 def handle(drone: DroneModel):

@@ -78,5 +78,5 @@ class video_server:
                     print("Drone Disconnected, Video Session Closed.")
                     break
 
-                print("Waiting for Client")
+                # print("Waiting for Client")
         
