@@ -79,4 +79,3 @@ class video_server:
                     break
 
                 # print("Waiting for Client")
-        
