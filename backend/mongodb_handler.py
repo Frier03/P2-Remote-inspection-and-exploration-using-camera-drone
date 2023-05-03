@@ -80,8 +80,24 @@ class MongoDB:
 
         set_mongo(self)
 
-    def name_exist(self, name_dict: dict[str, str], collection: object) -> dict | None:
-        # NOTE: dict must only have one key-val pair
+
+    def name_exist(self, name_dict: dict[str: str], collection: object) -> dict | None:
+        """Check if a users name is in the database.
+
+        Args:
+            name_dict (dict[str, str]): A dict like with name: `John`.
+            collection (object): The MongoDB user collection.
+
+        Returns:
+            dict: With the user if found
+            None: else None
+        
+        Example:
+            >>> mongo.name_exist({'name': 'JohnWick'}, mongo.users_collection)
+            {'name': 'JohnWick'}
+        """
+
+        # NOTE: dict must only have one key-val pair.
         if len(name_dict) > 1 or len(name_dict) == 0:
             return
 
@@ -89,29 +105,54 @@ class MongoDB:
         if 'name' not in name_dict.keys():
             return
 
+        # Return the user
         return collection.find_one(name_dict)
+    
 
     def authenticate(self, subject: UserModel | RelayHandshakeModel) -> bool:
+        """Authenticate a user or a relay.
+
+        Args:
+            subject (UserModel | RelayHandshakeModel): A usermodel or a relaymodel.
+
+        Returns:
+            bool: True if the user or relay is authenticated, False otherwise.
+        
+        Note:
+            Se `models.py` for more detail about the models.
+        """
+
+        # Find the subject in the relays dict.
         if isinstance(subject, RelayHandshakeModel):
-            collection = self.relays_collection
+            collection: object = self.relays_collection
+
+        # Else find the subject of the user.
         elif isinstance(subject, UserModel):
-            collection = self.users_collection
+            collection: object = self.users_collection
 
-        query = {'name': subject.name}
-        subject_exist = collection.find_one(query)
+        # Query for database.
+        query: dict[str, str] = {'name': subject.name}
 
+        # Check in the database.
+        subject_exist: bool = collection.find_one(query)
+
+        # Does the subject exist?
         if not subject_exist:
             return False
         
+        # Does the subject have the right password?
         if not verify_password(subject.password, subject_exist.get('hashed_password')):
             return False
+        
+        # All else then they are authenticated.
         return True
 
+
 # Essential when working with Dependencies in main.py @ relay_router and frontend_router
-def set_mongo(object):
+def set_mongo(object): # NOTE: This function is unclear of its purpose.
     global mongo
     mongo = object
-def get_mongo():
+def get_mongo(): # NOTE: This function is never called
     return mongo
 
 
