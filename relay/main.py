@@ -9,7 +9,7 @@ from time import sleep, time
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
 BACKEND_URL = 'http://192.168.137.101:8000/v1/api/relay' # http://ip
-ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78']
+ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78', '60-60-1f-5b-4c-15', '60-60-1f-5b-4a-0d']
 
 class Relaybox:
     def __init__(self, name, password) -> None:
@@ -24,11 +24,9 @@ class Relaybox:
         #----# Heartbeat variables #----#
         self.session = requests.Session()
         self.heartbeat_url = f"{BACKEND_URL}/heartbeat"
-        self.heartbeat_timeout = 5.0 # session timeout (seconds)
-        self.heartbeat_interval = 2 # loop interval (seconds)
+        self.heartbeat_timeout = 10.0 # session timeout (seconds)
+        self.heartbeat_interval = 3 # loop interval (seconds)
         self.heartbeat_response_time = 0
-
-
 
         # Socket for checking that multiple drones received commands before changing its ports.
         self.response_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -57,12 +55,12 @@ class Relaybox:
         logging.info("[THREAD] Scanning for drones...")
         scan_for_drone_thread = threading.Thread(target=self.scan_for_drone, args=())
         scan_for_drone_thread.start()
-        
+
         heartbeat_thread = threading.Thread(target=self.heartbeat, args=())
         heartbeat_thread.start()
 
 
-    def heartbeat(self):
+    def heartbeat(self) -> None:
         while True:
             start_time = time()
             try:
@@ -77,12 +75,12 @@ class Relaybox:
             end_time = time()
             self.heartbeat_response_time = end_time - start_time
             backend_data_status = self.backend_data_up_to_date(response) # Check if backend data is up to date with the data we have here
-            logging.info(f'Heartbeat | {backend_data_status} | Response time: {self.heartbeat_response_time:.3f} seconds | Used_status_ports: {self.used_status_ports}')
+            logging.info(f'Heartbeat | {backend_data_status} | Response time: {self.heartbeat_response_time:.3f} seconds | {self.name}: {self.drones.keys()}')
             
             sleep(self.heartbeat_interval)
     
 
-    def backend_data_up_to_date(self, response):
+    def backend_data_up_to_date(self, response) -> str:
         up_to_date = True
         for drone_name, drone_data in self.drones.items():
             drone = drone_data['objectId']
@@ -115,8 +113,9 @@ class Relaybox:
                 if drone[1] not in ALLOWED_DRONES:
                     scanned_drones.remove(drone)
             
+            # -n is the amount of pings, more is needed for a worse connection.
             for drone in scanned_drones[:]:
-                cmd = f"ping -w 100 -n 2 {drone[0]}" 
+                cmd = f"ping -w 100 -n 4 {drone[0]}" 
                 pinging = str(subprocess.run(cmd, capture_output=True))
                 pinging = pinging.replace(" \r","")
 
@@ -126,7 +125,7 @@ class Relaybox:
             self.filter_scanned_drones(scanned_drones)
     
 
-    def filter_scanned_drones(self, scanned_drones):
+    def filter_scanned_drones(self, scanned_drones) -> None:
         # Check for connected drone
         for drone in scanned_drones:
             ips_mapped = []
@@ -223,7 +222,7 @@ class Drone:
         self.video_port = None #NOTE: video_port for relay -> backend
         
         # Backend video port:
-        self.BACKEND_VIDEO_PORT = '192.168.137.101'
+        self.BACKEND_VIDEO_IP = '192.168.137.101'
 
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
@@ -244,7 +243,7 @@ class Drone:
         self.takeoff = False
 
 
-    def start(self):
+    def start(self) -> None:
         logging.info(f"Starting [{self.name}, {self.host}] on {self.parent}")
         
         logging.debug(f"[{self.name}] Getting available video ports from backend...")
@@ -263,38 +262,30 @@ class Drone:
             self.set_drone_ports()
             logging.debug(f"{self.name} used {self.video_port} port for streamon")
 
-        # Derelict code
         """
+        # Derelict code, RTS handshake
         if self.drone_active == True:
             logging.debug(f"[{self.name}] Sending Handshake Packet to Backend and awaiting response...")
             self.RTS_handshake()
         """
-
+        
+        # Wait 1 seconds for the ports to be correctly set.
         sleep(1)
 
+        self.send_control_command("streamon", self.default_buffer_size)
+        self.send_control_command("speed 60", self.default_buffer_size)
+        
         if self.drone_active == True:
-            logging.debug(f"[{self.name}] Enabling streamon...")
-            self.send_control_command("streamon", self.default_buffer_size)
-
-            logging.debug("Enabled streamon")
-
-            self.send_control_command("speed 60", self.default_buffer_size)
-
             #Start Threads for each process
-            logging.debug(f"[{self.name}] Starting video thread")
+            logging.debug(f"[{self.name}]: Starting the 4 required threads.")
             video_thread = threading.Thread(target=self.video_thread).start()
-
-            logging.debug(f"[{self.name}] Starting status thread")
             status_thread = threading.Thread(target=self.status_thread).start()
-
-            logging.debug(f"[{self.name}] Starting rc thread")
             command_thread = threading.Thread(target=self.rc_thread).start()
-
-            logging.debug(f"[{self.name}] Starting landing thread")
             landing_thread = threading.Thread(target=self.landing_thread).start()
+            logging.debug(f"[{self.name}]: All threads have started.")
 
 
-    def status_thread(self):
+    def status_thread(self) -> None:
         # Ask drone for status [battery, yaw, altitude...]
         # Send collected status to API
         
@@ -305,15 +296,14 @@ class Drone:
             sleep(0.1)
 
             query = {'name': self.name, 'parent': self.parent, 'status_information': status.decode('utf-8')}
-            status_message = requests.post(f'{BACKEND_URL}/drone/status_information', json=query)
+            requests.post(f'{BACKEND_URL}/drone/status_information', json=query)
     
-    def landing_thread(self):
+    def landing_thread(self) -> None:
         while self.drone_active == True:
 
             land_query = { 'name': self.name, 'parent': self.parent }
             should_land = requests.get(f'{BACKEND_URL}/drone/should_land', json=land_query)
             sleep(0.1)
-            logging.debug(f'Skal vi lande? {should_land}')
 
             if '<Response [200]>' == str(should_land):
                 self.takeoff = False
@@ -321,32 +311,32 @@ class Drone:
 
                 query = {'name': self.name, 'parent': self.parent }
                 status_message = requests.post(f'{BACKEND_URL}/drone/successful_land', json=query)
-                
+
                 logging.debug(f'{self.name} succesfully landed with status: {status_message}')
 
 
-    def rc_thread(self):
-        while self.drone_active == True:
-            self.takeoff = False
-            takeoff_query = { 'name': self.name, 'parent': self.parent }
+    def rc_thread(self) -> None:
 
-            while self.takeoff == False:
-                sleep(1)
-                try:
-                    should_takeoff = requests.get(f'{BACKEND_URL}/drone/should_takeoff', json=takeoff_query)
-                except:
-                    logging.error(f'Could not reach {BACKEND_URL}/drone/should_takeoff endpoint, retrying in 2 seconds.')
-                    sleep(2)
-                    self.rc_thread()
-                
-                logging.debug(should_takeoff)
+        self.takeoff = False
+        takeoff_query = { 'name': self.name, 'parent': self.parent }
 
-                if '<Response [200]>' == str(should_takeoff):
-                    takeoff = self.send_control_command('takeoff', self.default_buffer_size)
-                    logging.debug(f'Completed takeoff for {self.name} at {self.parent}')
+        while (self.drone_active == True) and (self.takeoff == False):
+            sleep(1)
+            try:
+                should_takeoff = requests.get(f'{BACKEND_URL}/drone/should_takeoff', json=takeoff_query)
+            except:
+                logging.error(f'Could not reach {BACKEND_URL}/drone/should_takeoff endpoint, retrying in 2 seconds.')
+                sleep(2)
+                self.rc_thread()
+            
+            logging.debug(should_takeoff)
 
-                    self.takeoff = True
-                    should_takeoff = requests.post(f'{BACKEND_URL}/drone/successful_takeoff', json=takeoff_query)
+            if '<Response [200]>' == str(should_takeoff):
+                takeoff = self.send_control_command('takeoff', self.default_buffer_size)
+                logging.debug(f'Completed takeoff for {self.name} at {self.parent}')
+
+                self.takeoff = True
+                should_takeoff = requests.post(f'{BACKEND_URL}/drone/successful_takeoff', json=takeoff_query)
 
             command_queue = { 'name': self.name, 'parent': self.parent}
 
@@ -372,7 +362,7 @@ class Drone:
         # RTS = Ready To Stream
 
         # Contact backend to tell it we are ready to send video.
-        self.video_socket.sendto(b'RTS', (self.BACKEND_VIDEO_PORT, self.video_port))
+        self.video_socket.sendto(b'RTS', (self.BACKEND_VIDEO_IP, self.video_port))
         logging.debug('Send RTS message')
 
         while self.drone_active == True:
@@ -389,7 +379,7 @@ class Drone:
             logging.debug(f'Completed handshake for {addr}')
 
 
-    def video_thread(self):
+    def video_thread(self) -> None:
         while self.drone_active == True:
             try:
                 video_feed, addr = self.video_socket.recvfrom(self.default_buffer_size)
@@ -398,36 +388,37 @@ class Drone:
 
             try:
                 # Send video feed to backend, with the specific video feed port, given by the backend in get_video_port().
-                self.video_socket.sendto(video_feed, (self.BACKEND_VIDEO_PORT, self.video_port))
+                self.video_socket.sendto(video_feed, (self.BACKEND_VIDEO_IP, self.video_port))
             except:
                 logging.error('Socket have already been closed: 2')
-        return
  
 
-    def get_video_port(self):
+    def get_video_port(self) -> None:
         query = { 'name': self.name, 'parent': self.parent }
         response = requests.get(f'{BACKEND_URL}/new_drone', json=query)
         
         if response.status_code != 200: # Every HTTPException.
             logging.error(f"Error trying to get available port from URL [{response.url}] with status code {response.status_code}")
-            sleep(2)
-            self.get_video_port()
+
+            if self.drone_active == True:
+                sleep(2)
+                self.get_video_port()
             
         
         port = response.json().get('video_port')
         self.video_port = port
 
 
-    def set_drone_ports(self):
+    def set_drone_ports(self) -> None:
         # the ip should be set '', but when running it on a local machine this socket address is already 
         # being used by the video_server class.
         self.video_socket.bind(('', self.video_port))
         self.send_control_command(f"port {self.status_port} {self.video_port}", self.default_buffer_size)
     
 
-    def send_control_command(self, command: str, buffer_size: int) -> None:
+    def send_control_command(self, command: str, buffer_size: int) -> bool|None:
         try:
-            while True:
+            while self.drone_active == True:
                 
                 response = None
                 addr = None
@@ -441,7 +432,6 @@ class Drone:
                 except OSError:
                     logging.debug(f'Error did not receive response from {self.name} at {self.host}, resending new command: {command} in 2s.')
                     sleep(2)
-                    ...
 
                 if response != None:
                     logging.debug(f'Received response: {response} from {self.name} at {self.host}')
@@ -453,20 +443,21 @@ class Drone:
                 
                 logging.debug('No response was received in the given time.')
 
+            if self.drone_active == False:
+                logging.debug('Connection to drone lost.')
+
         except Exception as socket_error:
             logging.error(f'Error: {socket_error}')
             
 
     def send_rc_command(self, command: str, buffer_size: int) -> None:
         try:
-            # Send command and await response.
-            logging.debug(f'Sending command: {command} to {self.name} at {self.host} and awaiting response.')
+            # Send command and do not await response.
+            logging.debug(f'Sending command: {command} to {self.name} at {self.host}.')
             self.response_socket.sendto(bytes(command, 'utf-8'), (self.host, 8889)) 
 
         except OSError:
-            #logging.debug(f'Error did not receive response from {self.name} at {self.host}, resending new command: {command} in 2s.')
-            #sleep(2)
-            ...
+            pass # The only error that can occur is when the socket is closed by another thread, we catch this expection, but do nothing with it.
 
 if __name__ == '__main__':
     relay = Relaybox("relay_0001", "123")
