@@ -2,7 +2,6 @@ import sys, time
 import threading
 import socket
 import logging
-import cv2
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
 class video_server:
@@ -22,37 +21,21 @@ class video_server:
         self.udp_sock.bind(self.local_udp_addr) #Bind the udp socket to the UDP Address
         print(f'Server Address: {self.local_udp_addr}')
 
-        self.handle_stream()
+        self.check_conn()
 
-    async def handle_stream(self):
-        '''
+    def handle_stream(self):
         #Send confirmation Packets
         for conn in self.connections:
             self.udp_sock.sendto("poop".encode('utf-8'), conn)
-        '''
-            
-        with connect("ws://192.168.137.101") as websocket:
-            print("connected to websocket")
-            while len(self.connections) == 2 and self.drone_on == True: #While both 
-                packetdata = b''
-                while True:
-                    try:
-                        data, relay = self.udp_sock.recvfrom(2048) # assuming this is video feed
-                        packetdata += data
 
-                        #Check for end of frame
-                        if len(data) < 2048:
-                            # convert frame to base64 str
-                            frame_str = base64.b64encode(cv2.imencode('.jpg', packetdata)[1]).decode()
-                            # Send frame to the frontend via the websocket
-                            print("please work")
-                            websocket.send(frame_str)
-                    
-                    except Exception:
-                        print(f'Could not retrieve message: Socket Most Likely Closed.')
-                        return
+        while len(self.connections) == 2 and self.drone_on == True: #While both 
+            try:
+                data, relay = self.udp_sock.recvfrom(2048)
+
+            except Exception:
+                print(f'Could not retrieve message: Socket Most Likely Closed.')
+                return
             
-            '''
             try:
                 for conn in self.connections:
                     if conn != relay:
@@ -70,9 +53,8 @@ class video_server:
         if self.drone_on == True:
             print("Client has disconnected from session")
         return
-        '''
+                
 
-    '''
     def check_conn(self):
         address = None
         while len(self.connections) < 2 and self.drone_on == True: #Wait for both user and relaybox
@@ -96,28 +78,4 @@ class video_server:
                     print("Drone Disconnected, Video Session Closed.")
                     break
 
-
-import asyncio
-import cv2
-import base64
-import websockets
-
-async def video_feed(websocket, path):
-    cap = cv2.VideoCapture(0)
-    while True:
-        ret, frame = cap.read()
-        if ret:
-            # Convert frame to base64 string
-            frame_str = base64.b64encode(cv2.imencode('.jpg', frame)[1]).decode()
-            # Send frame to the frontend via the websocket
-            await websocket.send(frame_str)
-        else:
-            break
-    cap.release()
-
-async def start_server():
-    server = await websockets.serve(video_feed, "localhost", 8000)
-    await server.wait_closed()
-
-asyncio.run(start_server())
-'''
+                # print("Waiting for Client")
