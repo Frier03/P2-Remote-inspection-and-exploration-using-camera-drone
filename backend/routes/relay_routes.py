@@ -179,6 +179,11 @@ def handle(drone: DroneModel): # Relay wants every drone cmd_queue that is linke
 
 @relay_router.get("/heartbeat")
 def handle(relay: RelayHeartbeatModel): # Relay should send a heartbeat every 2sec
+    if relay.name not in active_relays.keys(): # invalid relay name? or not active?
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Relay not found",
+    )
 
     # Get utc since 1970
     utc: int = int(time.time())
@@ -313,7 +318,7 @@ def handle(drone: DroneModel):
     print(f"Drone Port {port}")
 
     # Create a Server instance which handles the video connection
-    video_feed_instance = video_server(UDP_port = port)
+    video_feed_instance = video_server(UDP_port = port, drone_object=relay.drones[drone.name])
 
     #Add object and port to dictionary
     active_sessions[port] = video_feed_instance
