@@ -149,7 +149,6 @@ class drone_session:
         while True:
             # Send verification Packet
             try:
-                print("Sending Verification Packet")
                 self.udp_sock.sendto("poop".encode('utf-8'), self.backend_address)
                 break
             except Exception as e:
@@ -164,8 +163,6 @@ class drone_session:
             pass
     
     def video_stream(self):
-        print("Entered Video Capture")
-
         packet_data = b""
         while True:
             try:
