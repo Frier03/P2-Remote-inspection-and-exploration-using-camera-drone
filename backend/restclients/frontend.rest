@@ -11,12 +11,12 @@ Content-Type: application/json
 ###
 
 GET http://localhost:8000/v1/api/frontend/protected
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MDc5NzIyN30.YppaXTGlwcQ26sSNrtlfl_qThOUPbSbr46imVYKnqbY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MzI5MDAyOX0.yXXxu02N3-sTrbM8BiH15PcBYZWCIgQPBzh2e97e3sA
 
 ###
 
 POST http://localhost:8000/v1/api/frontend/logout
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MDM1MTYyOX0.uEJMorAeBdQbxUxMJsCGf6Z74JBWBAJ-zoEk0WK3P5A
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MzI5MDAyOX0.yXXxu02N3-sTrbM8BiH15PcBYZWCIgQPBzh2e97e3sA
 
 ###
 
@@ -32,7 +32,7 @@ Content-Type: application/json
 ###
 
 GET http://localhost:8000/v1/api/frontend/users/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MjY3MDcxOH0.C8s3DK5DEsyV1apO464KFBlNOdGsnERHsOoCp1PCyCM
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTY4MzI5MDA5MH0.GVEEclzBOZL2qaYqyw_ay9PvZFBxXlOws0RlURqub14
 
 
 ###
