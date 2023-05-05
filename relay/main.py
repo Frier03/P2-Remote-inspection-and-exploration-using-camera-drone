@@ -22,7 +22,9 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(mes
 BACKEND_URL = 'http://89.150.129.29:8000/v1/api/relay'
 
 class Relaybox:
-    """The model of a relaybox, allows multiple drones to connect, by contacting a backend server.
+    """The model of a relaybox,
+     
+    Allowes multiple drones to connect, by contacting a backend server.
 
     Example:
         >>> if __name__ == '__main__':
@@ -548,7 +550,7 @@ class Drone:
         """
 
         # Continuously listen for status updates while the drone is active.
-        while self.drone_active == True:
+        while self.drone_active:
 
             land_query = { 'name': self.name, 'parent': self.parent }
             should_land = requests.get(f'{BACKEND_URL}/drone/should_land', json=land_query)
@@ -575,7 +577,7 @@ class Drone:
         self.takeoff: bool = False
 
 
-        while self.drone_active and self.takeoff:
+        while self.drone_active and (self.takeoff == False):
 
             # Query backend server to check if drone should take off
             takeoff_query: dict = { 'name': self.name, 'parent': self.parent }
@@ -586,6 +588,7 @@ class Drone:
             # Try to check it the drone should takeoff
             try:
                 should_takeoff = requests.get(f'{BACKEND_URL}/drone/should_takeoff', json=takeoff_query)
+                logging.debug(f'{should_takeoff} WLKWODKJOWKDOWKWKDOWDWKDOWDOKDWOKDOW')
 
             # If it fails to do so
             except Exception:
@@ -594,7 +597,7 @@ class Drone:
                 sleep(2)
                 self.rc_thread()
 
-            # If the resopns was successful.
+            # If the response was successful.
             if '<Response [200]>' == str(should_takeoff):
 
                 # The drone should now takeoff
@@ -615,10 +618,12 @@ class Drone:
             # This saves a small amount of resource.
             while self.drone_active and self.takeoff:
                 # Get commands from the backend endpoint: cmd_queue.
-                rc_commands: dict = requests.get(f'{BACKEND_URL}/cmd_queue', json=command_queue).json()
+                rc_commands: dict = requests.get(f'{BACKEND_URL}/cmd_queue', json=command_queue)
+
+                commands: dict = rc_commands.json()
 
                 # { 'message': [1, 2, 3, 4]}
-                commands: list = rc_commands.get('message')
+                commands: dict = commands.get('message')
                 
                 # Create a string that we can pass directly to the drone.
                 drone_command = f'rc {commands[0]} {commands[1]} {commands[2]} {commands[3]}'
