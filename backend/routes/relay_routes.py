@@ -318,7 +318,7 @@ def handle(drone: DroneModel):
     print(f"Drone Port {port}")
 
     # Create a Server instance which handles the video connection
-    video_feed_instance = video_server(UDP_port = port, drone_object=relay.drones[drone.name])
+    video_feed_instance = video_server(UDP_port = port)
 
     #Add object and port to dictionary
     active_sessions[port] = video_feed_instance

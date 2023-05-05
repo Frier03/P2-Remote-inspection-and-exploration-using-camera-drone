@@ -8,7 +8,7 @@ from time import sleep, time
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-BACKEND_URL = 'http://192.168.137.101:8000/v1/api/relay' # http://ip
+BACKEND_URL = 'http://192.168.137.187:8000/v1/api/relay' # http://ip
 ALLOWED_DRONES = ['60-60-1f-5b-4b-ea', '60-60-1f-5b-4b-d8', '60-60-1f-5b-4b-78', '60-60-1f-5b-4c-15', '60-60-1f-5b-4a-0d']
 
 class Relaybox:
@@ -222,7 +222,7 @@ class Drone:
         self.video_port = None #NOTE: video_port for relay -> backend
         
         # Backend video port:
-        self.BACKEND_VIDEO_IP = '192.168.137.101'
+        self.BACKEND_VIDEO_IP = '192.168.137.187'
 
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.default_buffer_size = 2048
@@ -460,6 +460,6 @@ class Drone:
             pass # The only error that can occur is when the socket is closed by another thread, we catch this expection, but do nothing with it.
 
 if __name__ == '__main__':
-    relay = Relaybox("relay_0001", "123")
+    relay = Relaybox("relay_0002", "123")
     relay.connect_to_backend()
     relay.start()
