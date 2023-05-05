@@ -1,4 +1,5 @@
 import subprocess, requests, socket, threading, PySimpleGUI as sg
+from pynput import keyboard
 from time import sleep
 
 
@@ -15,7 +16,7 @@ class client:
         self.active_relays = []
         self.active_drones = []
 
-        self.connection: object = None
+        self.connection: object = None #Stores the object (class) which handles the direct drone connection
 
         self.kill_trigger = threading.Event()
 
@@ -25,16 +26,10 @@ class client:
 
         self.video_port = None
 
-        self.ffmpeg_cmd = ['C:/Users/srisb/source/repos/P2/ffmpeg-master-latest-win64-gpl/ffmpeg-master-latest-win64-gpl/bin/ffplay',
-                            '-i', f'udp://0.0.0.0:{self.video_port}',
-                            '-probesize', '32',
-                            '-framerate', '30',
-                            '-fflags', 'nobuffer',
-                            '-flags', 'low_delay',
-                            '-framedrop',
-                            '-strict', 'experimental']
+
 
         self.handle()
+
 
     #-----# Main Handler #-----#
     def handle(self):
@@ -62,20 +57,29 @@ class client:
 
             if event in (sg.WIN_CLOSED, '-button.exit_program-'):
                 try:
-                    process.kill()
+                    self.connection.process.kill()
                     print('ffmpeg process killed')
                 except:
                     print('ffmpeg process was never begun...')
                 
                 # Kill the information gathering thread
                 self.kill_trigger.set()
+
+                #Kill the drone connection if on
+                if self.connection:
+                    self.connection.vidsock.close()
+                    del self.connection
+                    self.connection = None
                 break
 
             if event == '-button.connect_drone-':
                 
                 if (self.window['-combo.active_relays-'].get() != '') and (self.window['-combo.active_drones-'].get() != ''):
 
-                    # Get specific drone json from dict
+                    # Get specific drone from dict
+                    relay_name = self.window['-combo.active_relays-'].get()
+                    drone_name = self.window['-combo.active_drones-'].get()
+                    print(f"Connecting to Relay: {relay_name} on Drone: {drone_name}")
                     connected_drone_info = self.server_info[self.window['-combo.active_relays-'].get()][self.window['-combo.active_drones-'].get()]
 
                     self.window['-button.connect_drone-'].Update(disabled=True)
@@ -83,18 +87,26 @@ class client:
 
                     self.video_port = int(connected_drone_info['port'])
 
-                    process = subprocess.Popen(self.ffmpeg_cmd, stdout=subprocess.PIPE)
+                    #Create Class
+                    self.connection = controller(port=self.video_port, drone_name=drone_name, relay_name=relay_name)
 
             if event == '-button.disconnect_drone-':
+                #If the user has connected to a drone
+                if self.connection:
+                    self.window['-button.connect_drone-'].Update(disabled=False)
+                    self.window['-button.disconnect_drone-'].Update(disabled=True)
 
-                self.window['-button.connect_drone-'].Update(disabled=False)
-                self.window['-button.disconnect_drone-'].Update(disabled=True)
+                    #Kill the Video Process
+                    try:
+                        self.connection.process.kill()
+                        print('ffmpeg process killed')
+                    except:
+                        print('ffmpeg process was never begun...')
 
-                try:
-                    process.kill()
-                    print('ffmpeg process killed')
-                except:
-                    print('ffmpeg process was never begun...')
+                    #Delete the socket and object
+                    self.connection.vidsock.close()
+                    del self.connection
+                    self.connection = None
 
             if event == '-UPDATE_RELAYS-':
                 self.window['-combo.active_relays-'].Update(values=values[event])
@@ -104,12 +116,6 @@ class client:
 
 
         self.window.close()
-
-
-    def user_input(self):
-        #Variables
-        while True:
-            pass
 
 
     def login(self):
@@ -178,29 +184,163 @@ class client:
                 sleep(0.2)
 
             except AttributeError as tk:
-                print('Error failed to update drone and or relay since the gui have been killed.')
+                print('Error failed to update drone and or relay since the gui has been killed.')
         
         print('finished loop')
 
 class controller:
-    def __init__(self, port):
+    def __init__(self, port, relay_name, drone_name):
         
         #-----# Initialize Variables #-----#
+        self.relay = relay_name
+        self.drone = drone_name
         self.port = port
-        self.address = ('', 8000) #Localhost
+        self.address = ('', 5000) #Localhost
         self.backend_address = (BACKEND_IP, self.port)
 
         self.vidsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.vidsock.bind(self.backend_address)
 
+        self.ffmpeg_cmd = ['C:/Users/chris/Documents/ComputerTechnology/ffmpeg-master-latest-win64-gpl/bin/ffplay',
+                    '-i', f'udp://0.0.0.0:{self.port}',
+                    '-probesize', '32',
+                    '-framerate', '30',
+                    '-fflags', 'nobuffer',
+                    '-flags', 'low_delay',
+                    '-framedrop',
+                    '-strict', 'experimental']
+        
+
+        #-----# Controller/Key Mapping Variables #-----#
+
+        self.for_back_velocity = 0
+        self.left_right_velocity = 0
+        self.up_down_velocity = 0
+        self.yaw_velocity = 0
+        self.vel_speed = 50
+
+        self.key_mapping = {
+            'w': (1, 0, 0, 0),
+            's': (-1, 0, 0, 0),
+            'a': (0, -1, 0, 0),
+            'd': (0, 1, 0, 0),
+            'space': (0, 0, 1, 0),
+            'shift': (0, 0, -1, 0),
+            'q': (0, 0, 0, -1),
+            'e': (0, 0, 0, 1),
+            't': (0, 0, 0, 0),
+            'l': (0, 0, 0, 0),
+        }
+
+        self.key_mapping_release = {
+            'w': (-1, 0, 0, 0),
+            's': (1, 0, 0, 0),
+            'a': (0, 1, 0, 0),
+            'd': (0, -1, 0, 0),
+            'space': (0, 0, -1, 0),
+            'shift': (0, 0, 1, 0),
+            'q': (0, 0, 0, 1),
+            'e': (0, 0, 0, -1),
+        }
+
+        self.pressed_keys = set()
+
+        #-----# Start the Object Handler #-----#
+
         self.handle()
     
+
     def handle(self):
-        #Send Verification Packet
+        # Send Verification Packet 3 times to minimize error chance
+        for i in range(3):
+            try:
+                self.vidsock.sendto('rts'.encode('utf-8'), self.backend_address)
+            except Exception as e:
+                print(f'Could not send RTS: {e}')
+
+        #Start the Video Process
+        self.video()
+
+        with keyboard.Listener(on_press=self.on_press(), on_release=self.on_release) as listener:
+            listener.join()
+
+
+    def video(self):
+        print("Starting Video Process")
+        self.process = subprocess.Popen(self.ffmpeg_cmd, stdout=subprocess.PIPE)
+
+
+    def update_velocity(self, key_char, mapping):
+        #Check input
+        if self.key_char == 'w' or self.key_char == 's':
+            self.for_back_velocity += self.vel_speed * mapping[key_char][0]
+
+        elif key_char == 'a' or key_char == 'd':
+            self.left_right_velocity += self.vel_speed * mapping[key_char][1]
+
+        elif key_char == 'space' or key_char == 'shift':
+            self.up_down_velocity += self.vel_speed * mapping[key_char][2]
+
+        elif key_char == 'q' or key_char == 'e':
+            self.yaw_velocity += self.vel_speed * mapping[key_char][3]
+
+        elif key_char == 't':
+            #Takeoff
+            query = {'name': self.drone, 'parent': self.relay}
+            response = requests.post(f'{BACKEND_URL}/drone/takeoff', json=query)
+            print("Takeoff: ", response.json())
+            return
+        
+        elif key_char == 'l':
+            #Land
+            query = {'name': self.drone, 'parent': self.relay}
+            response = requests.post(f'{BACKEND_URL}/drone/takeoff', json=query)
+            print("Land: ", response.json())
+            return
+
+        print("Velocity:", self.for_back_velocity, self.left_right_velocity, self.up_down_velocity, self.yaw_velocity)
+
+        #Send Command to Backend
+        query = {'relay_name': self.relay, 'drone_name': self.drone, 'cmd': [self.for_back_velocity, self.left_right_velocity, self.up_down_velocity, self.yaw_velocity]}
+        response = requests.post(f'{BACKEND_URL}/drone/new_command', json=query)
+        print("CMD: ", response.json())
+
+
+    def on_press(self, key):
         try:
-            self.vidsock.sendto('rts'.encode('utf-8'), self.backend_address)
-        except Exception as e:
-            print(f'Could not send RTS: {e}')
+            key_char = key.char.lower()
+        except AttributeError:
+            if key == keyboard.Key.space:
+                key_char = 'space'
+            elif key == keyboard.Key.shift:
+                key_char = 'shift'
+            else:
+                return
+        
+        if key_char in self.key_mapping and key_char not in self.pressed_keys:
+            if key_char != 't' or key_char != 'l':
+                self.pressed_keys.add(key_char)
+            self.update_velocity(key_char=key_char, mapping=self.key_mapping)
+
+    
+    def on_release(self, key):
+        try:
+            key_char = key.char.lower()
+        except AttributeError:
+            if key == keyboard.Key.space:
+                key_char = 'space'
+            elif key == keyboard.Key.shift:
+                key_char = 'shift'
+            else:
+                return
+            
+        if key_char in self.key_mapping and key_char in self.pressed_keys:
+            self.pressed_keys.remove(key_char)
+            self.update_velocity(key_char=key_char, mapping=self.key_mapping_release)
+
+        if key == keyboard.Key.esc:
+            #Stop the listener
+            return False
 
 
 if __name__ == '__main__':

@@ -517,7 +517,7 @@ def timeout_check(relay: Relay) -> None:
     while True:
         if relay.last_heartbeat_received != None:
             TIME_STAMP = copy.deepcopy(relay.last_heartbeat_received) # We cannot change the same list while looping
-            time.sleep(5) # Allow for a small timeout off 5 seconds.
+            time.sleep(8) # Allow for a 5 second timeout delay.
 
             if relay.last_heartbeat_received == TIME_STAMP:
                 print(f"Relaybox {relay.name} has Timed Out. Disconnecting items.\n")
