@@ -3,8 +3,8 @@ from pynput import keyboard
 from time import sleep
 
 
-BACKEND_URL = 'http://localhost:8000/v1/api/frontend'
-BACKEND_IP = ''
+BACKEND_URL = 'http://89.150.129.29:8000/v1/api/frontend'
+BACKEND_IP = '89.150.129.29'
 
 
 #Something to Initialize the GUI Here
@@ -195,13 +195,13 @@ class controller:
         self.relay = relay_name
         self.drone = drone_name
         self.port = port
-        self.address = ('', 5000) #Localhost
+        self.address = ('', 6969) #Localhost
         self.backend_address = (BACKEND_IP, self.port)
 
         self.vidsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.vidsock.bind(self.backend_address)
+        self.vidsock.bind(self.address)
 
-        self.ffmpeg_cmd = ['C:/Users/chris/Documents/ComputerTechnology/ffmpeg-master-latest-win64-gpl/bin/ffplay',
+        self.ffmpeg_cmd = ['C:/Users/chris/Documents/Comtek/ffmpeg-master-latest-win64-gpl/bin/ffplay',
                     '-i', f'udp://0.0.0.0:{self.port}',
                     '-probesize', '32',
                     '-framerate', '30',
@@ -261,7 +261,7 @@ class controller:
         #Start the Video Process
         self.video()
 
-        with keyboard.Listener(on_press=self.on_press(), on_release=self.on_release) as listener:
+        with keyboard.Listener(on_press=self.on_press, on_release=self.on_release) as listener:
             listener.join()
 
 
