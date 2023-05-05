@@ -10,6 +10,8 @@ Functions:
     set_mongo: Essential when working with Dependencies in main.py @ relay_router and frontend_router.
     get_mongo: Returns the current MongoDB object.
 
+    Both functions are not a part of the MongoDB class. See `set_mongo()` for more details.
+
 Dependencies:
     - pymongo
     - certifi
@@ -25,6 +27,7 @@ Example:
     >>> mongo.connect(mongodb_username="admin", mongodb_password="123")
     >>> user = mongo.name_exist({ 'name': 'JohnWick' }, mongo.users_collection)
 '''
+
 # PyMongoDB
 import pymongo
 import certifi  # For Windows users.
@@ -80,7 +83,6 @@ class MongoDB:
 
         set_mongo(self)
 
-
     def name_exist(self, name_dict: dict[str: str], collection: object) -> dict | None:
         """Check if a users name is in the database.
 
@@ -91,7 +93,7 @@ class MongoDB:
         Returns:
             dict: With the user if found
             None: else None
-        
+
         Example:
             >>> mongo.name_exist({'name': 'JohnWick'}, mongo.users_collection)
             {'name': 'JohnWick'}
@@ -107,7 +109,6 @@ class MongoDB:
 
         # Return the user
         return collection.find_one(name_dict)
-    
 
     def authenticate(self, subject: UserModel | RelayHandshakeModel) -> bool:
         """Authenticate a user or a relay.
@@ -117,21 +118,21 @@ class MongoDB:
 
         Returns:
             bool: True if the user or relay is authenticated, False otherwise.
-        
+
         Note:
-            Se `models.py` for more detail about the models.
+            See `models.py` for more detail about the models.
         """
 
-        # Find the subject in the relays dict.
+        # If the subject is type of RelayHandshakeModel
         if isinstance(subject, RelayHandshakeModel):
             collection: object = self.relays_collection
 
-        # Else find the subject of the user.
+        # Else if the subject is type of UserModel.
         elif isinstance(subject, UserModel):
             collection: object = self.users_collection
 
         # Query for database.
-        query: dict[str, str] = {'name': subject.name}
+        query: dict[str: str] = {'name': subject.name}
 
         # Check in the database.
         subject_exist: bool = collection.find_one(query)
@@ -139,20 +140,32 @@ class MongoDB:
         # Does the subject exist?
         if not subject_exist:
             return False
-        
+
         # Does the subject have the right password?
         if not verify_password(subject.password, subject_exist.get('hashed_password')):
             return False
-        
+
         # All else then they are authenticated.
         return True
 
 
 # Essential when working with Dependencies in main.py @ relay_router and frontend_router
-def set_mongo(object): # NOTE: This function is unclear of its purpose.
+def set_mongo(instance) -> None:
+    """Set MongoDB instance.
+
+    Note:
+        MongoDB instance must not be declared inside the MongoDB class.
+    """
     global mongo
-    mongo = object
-def get_mongo(): # NOTE: This function is never called
+    mongo = instance
+
+
+def get_mongo() -> MongoDB:
+    """Get MongoDB instance.
+    
+    Note:
+        See `set_mongo()` notes.
+    """
     return mongo
 
 

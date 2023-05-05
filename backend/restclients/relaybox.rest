@@ -15,7 +15,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wM
 Content-Type: application/json
 
 {
-    "name": "drone_002",
+    "name": "drone_001",
     "parent": "relay_0001"
 }
 
@@ -26,7 +26,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWxheV8wM
 Content-Type: application/json
 
 {
-    "name": "relay_0002"
+    "name": "relay_0001"
 }
 
 ###
@@ -59,7 +59,8 @@ GET http://localhost:8000/v1/api/relay/cmd_queue
 Content-Type:  application/json
 
 {
-    "name": "relay_0001"
+    "name": "drone_001",
+    "parent": "relay_0001"
 }
 
 ###
@@ -68,7 +69,7 @@ GET http://localhost:8000/v1/api/relay/drone/should_takeoff
 Content-Type: application/json
 
 {
-    "name": "drone_002",
+    "name": "drone_001",
     "parent": "relay_0001"
 }
 
@@ -77,6 +78,6 @@ POST http://localhost:8000/v1/api/relay/drone/successful_takeoff
 Content-Type: application/json
 
 {
-    "name": "drone_002",
+    "name": "drone_001",
     "parent": "relay_0001"
 }

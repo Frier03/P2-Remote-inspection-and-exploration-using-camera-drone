@@ -262,12 +262,12 @@ class Drone:
             self.set_drone_ports()
             logging.debug(f"{self.name} used {self.video_port} port for streamon")
 
-        """
-        # Derelict code, RTS handshake
+        
+        # RTS handshake
         if self.drone_active == True:
             logging.debug(f"[{self.name}] Sending Handshake Packet to Backend and awaiting response...")
             self.RTS_handshake()
-        """
+        
         
         # Wait 1 seconds for the ports to be correctly set.
         sleep(1)

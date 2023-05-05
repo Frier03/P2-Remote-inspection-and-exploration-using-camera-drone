@@ -10,7 +10,6 @@ connected to it. It has methods to add and delete drones, and to obtain
 available ports for video streams.
 '''
 
-
 class Drone:
     """Represents a drone object, similar to the Tello EDU Drone.
 
@@ -18,7 +17,7 @@ class Drone:
         name (str): The name of the drone.
         cmd_queue (list): A command queue for flying the drone.
         port (int | None): The socket port used to send video.
-        airborn (bool): A flag indicating whether the drone is currently airborne.
+        airborn (bool): A flag indicating whether the drone is currently airborn.
         should_takeoff (bool): A flag indicating whether the drone should take off.
         should_land (bool): A flag indicating whether the drone should land.
         status_information (dict): A dictionary containing information about the drone's status.
@@ -39,6 +38,7 @@ class Drone:
         self.should_takeoff: bool = False
         self.should_land: bool = False
 
+        # A dict of status information.
         self.status_information: dict = {}
 
     def set_status_information(self, status_information: bytes) -> None:
@@ -63,7 +63,7 @@ class Drone:
 
         # for every item/status information collected from element.
         for item in element:
-            # Get the key, value. for example: "pitch", "32"
+            # Get the key, value. for example: "pitch", 32
             key, value = item.split(':')
 
             # Overwrite the old status information with the new.
@@ -71,9 +71,15 @@ class Drone:
 
 
 class Relay:
-    """?
+    """Used for handling multiple drones. 
 
-    ? 
+    For handling a drones video stream, commands and status information.
+
+    Attributes:
+        name (str): The name of the relay.
+        drones (dict[str, Drone]): A dictionary of drones connected to the relay.
+        active_relays (dict[str, object]): A dictionary of active relays.
+        last_heartbeat_received (int | None): A integer of seconds since 1970 (utc).
     """
 
     def __init__(
@@ -81,15 +87,31 @@ class Relay:
         name: str,
         active_relays: dict[str, object]
     ) -> None:
+        """Initializes a new Relay object.
 
+        Args:
+            name (str): The name of the relay.
+            active_relays (dict[str, object]): A dictionary of active relays where object is of type `Drone`
+        """
         self.name: str = name
         self.drones: dict[str, Drone] = {}
         self.active_relays: dict[str, object] = active_relays
-        self.last_heartbeat_received = None # NOTE: Delete? This is never used
+        self.last_heartbeat_received: int | None = None # A int for sec since 1970 (utc). Se `relay_routes` for more detail.
 
-    def add_drone(self, name):
+    def add_drone(self, name: str) -> None:
+        """Adds a new drone to the relay.
+
+        Args:
+            name (str): The name of the drone.
+
+        Returns:
+            int: The port number for the video stream of the new drone.
+
+        Raises:
+            ValueError: If all available ports are taken.
+        """
         # Check for available ports
-        used_ports = set()
+        used_ports: set = set()
         for relay in self.active_relays.values():
             for drone in relay.drones.values():
                 used_ports.add(drone.port)
@@ -103,44 +125,18 @@ class Relay:
             raise ValueError("All available ports are taken.")
 
         # Create new Drone instance
-        drone = Drone(name)
-        drone.port = video_port
-        self.drones[name] = drone
+        drone: Drone = Drone(name)
+        
+        # Set drone port to video port
+        drone.port: int = video_port
+        
+        # Append new drone to drones
+        self.drones[name]: dict[str: Drone] = drone
 
         return video_port
 
-    def delete_drone(self, name):
-        pass
-
-
-'''
 if __name__ == '__main__':
-    # New relay connects { "name": "Relay_4444" }
-    relay0001 = Relay("Relay_0001")
-    relay0002 = Relay("Relay_0002")
-    relay0003 = Relay("Relay_0003")
-    
-    # New drone has connected to Relay_0002
-    for i in range(300):
-        if i == 10:
-            first_drone_name = next(iter(relay0002.drones.keys()))
-            del relay0002.drones[first_drone_name]
-            print(f"Removed first drone {first_drone_name}")
-        elif i == 20:
-            drone_names = list(relay0002.drones.keys())
-            fourteenth_drone_name = drone_names[13]
-            del relay0002.drones[fourteenth_drone_name]
-            print(f"Removed 14th drone {fourteenth_drone_name}")
-        
-        ports = relay0002.add_drone(f"drone_{i}")
-        print(ports)
-        from time import sleep
-        sleep(2)
-
-'''
-
-if __name__ == '__main__':
-    drone = Drone("bruh_drone")
+    drone = Drone("drone_001")
     drone.set_status_information(
         b'mid:-1;x:-100;y:-100;z:-100;mpry:0,0,0;pitch:0;roll:0;yaw:0;vgx:0;vgy:0;vgz:0;templ:48;temph:50;tof:10;h:0;bat:75;baro:-9.41;time:0;agx:-9.00;agy:-1.00;agz:-998.00;\r\n')
     print(drone.status_information)
