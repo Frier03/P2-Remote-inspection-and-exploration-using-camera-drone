@@ -19,8 +19,9 @@ class DroneVideoStream:
             tuple contains the IP address and port number of a connected client.
     """
     
-    def __init__(self, video_port: int) -> None:
-        self.video_port: int = video_port 
+    def __init__(self, video_port) -> None:
+        print("Initializing Video Server")
+        self.video_port = video_port 
         self.socket: socket.socket | None = None
         self.active: bool = True
         self.connections: list = [] # example `[(192.168.137.1, 52222), (..., ...), ...]`
@@ -37,12 +38,9 @@ class DroneVideoStream:
         
         This method also calls the `check_conn()` method to listen for incoming connections and start the video stream.
         """
-        HOSTNAME: str = socket.gethostname() # example `LAPTOP-Jerry12`
-        IP: str = socket.gethostbyname(HOSTNAME) # example `192.168.137.1`
-        PORT: int = self.video_port # example `52988`
-        
         # Create address from IPv4 and port
-        ADDRESS: tuple(str, int) = (IP, PORT)
+        print(self.video_port)
+        ADDRESS = ('', self.video_port)
         
         # Create socket and bind
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # IPv4 with UDP
@@ -51,6 +49,7 @@ class DroneVideoStream:
         self.check_conn()
 
     def handle_stream(self) -> None:
+        print("Entered Stream Handle")
         """Sends and receives data with the connected clients.
 
         Sends confirmation packets to each client to confirm their connection, then enters a loop
@@ -88,6 +87,7 @@ class DroneVideoStream:
         return
 
     def check_conn(self) -> None:
+        print("Checking Connections for Drone")
         """Waits for two clients to connect.
 
         Continuously listens for data from clients until two clients have connected, then calls
@@ -101,7 +101,9 @@ class DroneVideoStream:
         while len(self.connections) < 2 and self.active:
             if self.active:
                 try:
+                    print("Waiting For Data")
                     data, address = self.socket.recvfrom(2048)
+                    print(data, address)
 
                 except Exception:
                     print('Listen or Send Cancelled: Socket Most Likely Closed.')

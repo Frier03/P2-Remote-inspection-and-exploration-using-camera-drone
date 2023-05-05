@@ -197,7 +197,11 @@ def handle(drone: DroneModel):
     if drone.name in active_relays[drone.parent].drones:
         # Remove Exisiting Drone From the System
         print("Removing Existing Drone From System because of relaybox reconnect")
-        disconnect_drone(relay, drone.name)
+        try:
+            disconnect_drone(relay, drone.name)
+        except Exception:
+            print("Exception")
+            active_relays[drone.parent].drones.pop(drone.name) #Manually remove drone from list as it has been disconnected
         
     # Find that relay object now.
     relay: Relay = active_relays[drone.parent]
