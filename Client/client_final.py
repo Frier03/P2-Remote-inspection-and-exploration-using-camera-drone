@@ -181,7 +181,7 @@ class client:
                     old_drones = drone_list
                     self.window.write_event_value('-UPDATE_DRONES-', drone_list)
 
-                sleep(0.2)
+                sleep(0.6)
 
             except AttributeError as tk:
                 print('Error failed to update drone and or relay since the gui has been killed.')
@@ -201,8 +201,8 @@ class controller:
         self.vidsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.vidsock.bind(self.address)
 
-        self.ffmpeg_cmd = ['C:/Users/chris/Documents/Comtek/ffmpeg-master-latest-win64-gpl/bin/ffplay',
-                    '-i', f'udp://0.0.0.0:{self.port}',
+        self.ffmpeg_cmd = ['C:/Users/chris/Documents/ComputerTechnology/ffmpeg-master-latest-win64-gpl/bin/ffplay',
+                    '-i', f'udp://0.0.0.0:6969',
                     '-probesize', '32',
                     '-framerate', '30',
                     '-fflags', 'nobuffer',
@@ -241,13 +241,15 @@ class controller:
             'shift': (0, 0, 1, 0),
             'q': (0, 0, 0, 1),
             'e': (0, 0, 0, -1),
+            't': (0, 0, 0, 0),
+            'l': (0, 0, 0, 0),
         }
 
         self.pressed_keys = set()
 
         #-----# Start the Object Handler #-----#
-
-        self.handle()
+        handle_thread = threading.Thread(name='handler', target=self.handle, args=())
+        handle_thread.start()
     
 
     def handle(self):
@@ -257,6 +259,8 @@ class controller:
                 self.vidsock.sendto('rts'.encode('utf-8'), self.backend_address)
             except Exception as e:
                 print(f'Could not send RTS: {e}')
+
+        self.vidsock.close()
 
         #Start the Video Process
         self.video()
@@ -272,7 +276,7 @@ class controller:
 
     def update_velocity(self, key_char, mapping):
         #Check input
-        if self.key_char == 'w' or self.key_char == 's':
+        if key_char == 'w' or key_char == 's':
             self.for_back_velocity += self.vel_speed * mapping[key_char][0]
 
         elif key_char == 'a' or key_char == 'd':
@@ -294,7 +298,7 @@ class controller:
         elif key_char == 'l':
             #Land
             query = {'name': self.drone, 'parent': self.relay}
-            response = requests.post(f'{BACKEND_URL}/drone/takeoff', json=query)
+            response = requests.post(f'{BACKEND_URL}/drone/land', json=query)
             print("Land: ", response.json())
             return
 
@@ -303,7 +307,7 @@ class controller:
         #Send Command to Backend
         query = {'relay_name': self.relay, 'drone_name': self.drone, 'cmd': [self.for_back_velocity, self.left_right_velocity, self.up_down_velocity, self.yaw_velocity]}
         response = requests.post(f'{BACKEND_URL}/drone/new_command', json=query)
-        print("CMD: ", response.json())
+        print("CMD: ", response)
 
 
     def on_press(self, key):
@@ -334,7 +338,7 @@ class controller:
             else:
                 return
             
-        if key_char in self.key_mapping and key_char in self.pressed_keys:
+        if key_char in self.key_mapping_release and key_char in self.pressed_keys:
             self.pressed_keys.remove(key_char)
             self.update_velocity(key_char=key_char, mapping=self.key_mapping_release)
 
