@@ -137,13 +137,13 @@ def handle():
                             "name": "drone_001",
                             "port": 53222,
                             "airborn": False,
-                            "status_information": {}
+                            "status_information": str
                         },
                         "drone_002": {
                             "name": "drone_002",
                             "port": 53223,
                             "airborn": False,
-                            "status_information": {}
+                            "status_information": str
                         }
                     ]
                 }

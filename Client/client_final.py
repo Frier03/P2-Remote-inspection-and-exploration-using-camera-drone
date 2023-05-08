@@ -1,4 +1,4 @@
-import subprocess, requests, socket, threading, PySimpleGUI as sg
+import subprocess, requests, socket, threading, PySimpleGUI as sg, copy
 from pynput import keyboard
 from time import sleep
 
@@ -6,8 +6,6 @@ from time import sleep
 BACKEND_URL = 'http://89.150.129.29:8000/v1/api/frontend'
 BACKEND_IP = '89.150.129.29'
 
-
-#Something to Initialize the GUI Here
 
 class client:
     def __init__(self) -> None:
@@ -23,10 +21,9 @@ class client:
         self.username = 'admin'
         self.password = '123'
         self.token = None
+        self.header = {'Authorization': f'Bearer {self.token}'}
 
         self.video_port = None
-
-
 
         self.handle()
 
@@ -80,15 +77,19 @@ class client:
                     relay_name = self.window['-combo.active_relays-'].get()
                     drone_name = self.window['-combo.active_drones-'].get()
                     print(f"Connecting to Relay: {relay_name} on Drone: {drone_name}")
+
+                    #Verify with information from Backend
                     connected_drone_info = self.server_info[self.window['-combo.active_relays-'].get()][self.window['-combo.active_drones-'].get()]
 
+                    #Update Buttons
                     self.window['-button.connect_drone-'].Update(disabled=True)
                     self.window['-button.disconnect_drone-'].Update(disabled=False)
 
+                    #Identify Video Port
                     self.video_port = int(connected_drone_info['port'])
 
                     #Create Class
-                    self.connection = controller(port=self.video_port, drone_name=drone_name, relay_name=relay_name)
+                    self.connection = controller(port=self.video_port, drone_name=drone_name, relay_name=relay_name, security_header=self.header)
 
             if event == '-button.disconnect_drone-':
                 #If the user has connected to a drone
@@ -154,7 +155,7 @@ class client:
             relay_list = []
             drone_list = []
             try:
-                response = requests.get(f'{BACKEND_URL}/relayboxes/all')
+                response = requests.get(f'{BACKEND_URL}/relayboxes/all', headers=self.header)
                 self.server_info = response.json()
 
             except Exception as e:
@@ -181,6 +182,12 @@ class client:
                     old_drones = drone_list
                     self.window.write_event_value('-UPDATE_DRONES-', drone_list)
 
+                #-----# Pass Status Information if Connected To Drone #-----#
+                if self.connection != None:
+                    #We Use copy to avoid iterating a changing list or performing simultaneous action on the same dictionary
+                    self.connection.status = copy.deepcopy(self.server_info[self.connection.relay][self.connection.drone]['status_information'])
+                
+
                 sleep(0.6)
 
             except AttributeError as tk:
@@ -188,15 +195,19 @@ class client:
         
         print('finished loop')
 
+
 class controller:
-    def __init__(self, port, relay_name, drone_name):
+    def __init__(self, port, relay_name, drone_name, security_header):
         
         #-----# Initialize Variables #-----#
+        self.header = security_header
         self.relay = relay_name
         self.drone = drone_name
         self.port = port
         self.address = ('', 6969) #Localhost
         self.backend_address = (BACKEND_IP, self.port)
+        
+        self.status = None #Will be a string when updated
 
         self.vidsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.vidsock.bind(self.address)
@@ -248,8 +259,7 @@ class controller:
         self.pressed_keys = set()
 
         #-----# Start the Object Handler #-----#
-        handle_thread = threading.Thread(name='handler', target=self.handle, args=())
-        handle_thread.start()
+        self.handle()
     
 
     def handle(self):
@@ -260,10 +270,15 @@ class controller:
             except Exception as e:
                 print(f'Could not send RTS: {e}')
 
-        self.vidsock.close()
+        self.vidsock.close() #Close the socket to allow use from FFMPEG
 
         #Start the Video Process
-        self.video()
+        video_thread = threading.Thread(name='video_stream', target=self.video, args=())
+        video_thread.start()
+        
+        #Start the Status Thread
+        status_thread = threading.Thread(name='status', target=self.status_information, args=())
+        status_thread.start()
 
         with keyboard.Listener(on_press=self.on_press, on_release=self.on_release) as listener:
             listener.join()
@@ -273,6 +288,17 @@ class controller:
         print("Starting Video Process")
         self.process = subprocess.Popen(self.ffmpeg_cmd, stdout=subprocess.PIPE)
 
+    def status_information(self):
+        '''
+        Status information handles the information regarding the specific drone.
+        The status information is colllected and passed in the Client Class under the information() function.
+
+        Output: Prints the Status
+        '''
+        while True:
+            print(f"Drone Status:\n {self.status}")
+            sleep(1)
+        
 
     def update_velocity(self, key_char, mapping):
         #Check input
@@ -291,14 +317,14 @@ class controller:
         elif key_char == 't':
             #Takeoff
             query = {'name': self.drone, 'parent': self.relay}
-            response = requests.post(f'{BACKEND_URL}/drone/takeoff', json=query)
+            response = requests.post(f'{BACKEND_URL}/drone/takeoff', json=query, headers=self.header)
             print("Takeoff: ", response.json())
             return
         
         elif key_char == 'l':
             #Land
             query = {'name': self.drone, 'parent': self.relay}
-            response = requests.post(f'{BACKEND_URL}/drone/land', json=query)
+            response = requests.post(f'{BACKEND_URL}/drone/land', json=query, headers=self.header)
             print("Land: ", response.json())
             return
 
@@ -306,7 +332,7 @@ class controller:
 
         #Send Command to Backend
         query = {'relay_name': self.relay, 'drone_name': self.drone, 'cmd': [self.for_back_velocity, self.left_right_velocity, self.up_down_velocity, self.yaw_velocity]}
-        response = requests.post(f'{BACKEND_URL}/drone/new_command', json=query)
+        response = requests.post(f'{BACKEND_URL}/drone/new_command', json=query, headers=self.header)
         print("CMD: ", response)
 
 
