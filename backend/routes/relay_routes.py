@@ -197,7 +197,11 @@ def handle(drone: DroneModel):
     if drone.name in active_relays[drone.parent].drones:
         # Remove Exisiting Drone From the System
         print("Removing Existing Drone From System because of relaybox reconnect")
-        disconnect_drone(relay, drone.name)
+        try:
+            disconnect_drone(relay, drone.name)
+        except Exception:
+            print("Exception")
+            active_relays[drone.parent].drones.pop(drone.name) #Manually remove drone from list as it has been disconnected
         
     # Find that relay object now.
     relay: Relay = active_relays[drone.parent]
@@ -517,7 +521,7 @@ def timeout_check(relay: Relay) -> None:
     while True:
         if relay.last_heartbeat_received != None:
             TIME_STAMP = copy.deepcopy(relay.last_heartbeat_received) # We cannot change the same list while looping
-            time.sleep(5) # Allow for a small timeout off 5 seconds.
+            time.sleep(8) # Allow for a 5 second timeout delay.
 
             if relay.last_heartbeat_received == TIME_STAMP:
                 print(f"Relaybox {relay.name} has Timed Out. Disconnecting items.\n")

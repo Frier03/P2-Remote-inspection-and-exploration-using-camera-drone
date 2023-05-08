@@ -313,7 +313,7 @@ def handle(cmd_model: NewCMDModel):
         )
     
     # Get relay object
-    relay: object = active_relays[drone_name]
+    relay: object = active_relays[relay_name]
 
     # Check if drone (drone.name) is valid/active drone
     if drone_name not in relay.drones.keys():
