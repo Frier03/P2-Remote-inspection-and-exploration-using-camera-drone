@@ -329,7 +329,7 @@ def handle(cmd_model: NewCMDModel):
     if not drone.airborn:
         raise HTTPException(
             status_code=status.HTTP_425_TOO_EARLY,
-            detail="{drone.name} is not airborn"
+            detail="Drone is not airborn"
         )
 
     # Update the drones command queue.
