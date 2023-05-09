@@ -263,17 +263,17 @@ def handle(drone: DroneModel):
     drone: object = relay.drones[drone.name]
 
     # Is drone already trying to takeoff?
-    if drone.should_takeoff:
+    if drone.should_land:
         raise HTTPException(
             status_code=status.HTTP_208_ALREADY_REPORTED,
-            detail="Drone is already trying to take off"
+            detail="Drone is already trying to land"
         )
         
     # Is drone already airborne?
-    if drone.airborn:
+    if not drone.airborn:
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail="Drone is already airborn"
+            detail="Drone is not airborne"
         )
 
     # Now the drone should land.
