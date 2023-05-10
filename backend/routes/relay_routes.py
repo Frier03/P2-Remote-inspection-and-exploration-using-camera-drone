@@ -134,7 +134,7 @@ def handle(relay: RelayHeartbeatModel):
     return { "message": f"Hello {relay.name}",
              f"{relay.name}": {"drones": relay.drones} }
 
-@relay_router.get('/')
+@relay_router.get('/cmd_queue')
 def handle(drone: DroneModel):
     """Returns the command queue of a drone linked to the relay.
 
