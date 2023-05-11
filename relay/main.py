@@ -19,7 +19,7 @@ from time import sleep, time
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
 # The URL of the backend IPv4.
-BACKEND_URL = 'http://00.00.00.00:8000/v1/api/relay'
+BACKEND_URL = 'http://89.150.129.29:8000/v1/api/relay'
 
 class Relaybox:
     """The model of a relaybox,
@@ -43,6 +43,7 @@ class Relaybox:
         self.NAME: str = name
         self.PASSWORD: str = password
         self.token: str | None = None 
+        self.header: dict = {'Authorization': f'{self.token}'}
         self.session: requests.Session = requests.Session() # Used for the heartbeat function only. Token did not work
 
         # Dict of drones currently connected to the relaybox
@@ -82,6 +83,7 @@ class Relaybox:
 
             token: str = response.json().get('access_token')
             self.token = token
+            self.header: dict = {'Authorization': f'{self.token}'}
             logging.info("Connected to backend")
             
         # When no reponse is given try again.
@@ -129,7 +131,7 @@ class Relaybox:
             
             try:
                 query = { 'name': self.NAME }
-                response = self.session.get(HEARTBEAT_URL, json=query, timeout=10.0).json()
+                response = self.session.get(HEARTBEAT_URL, headers=self.header, json=query, timeout=10.0).json()
                 
             except requests.exceptions.Timeout:
                 logging.error("Heartbeat timed out")
@@ -446,7 +448,7 @@ class Drone:
         self.parent: str = parent
         
         # The IPv4 address for the backend.
-        self.backend_IP = '00.00.00.00' # TODO: This could be an URL instead
+        self.backend_IP = '89.150.129.29' # TODO: This could be an URL instead
 
         # A UDP socket for receiving the video feed from the drone.
         self.video_socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -588,7 +590,7 @@ class Drone:
             # Try to check it the drone should takeoff
             try:
                 should_takeoff = requests.get(f'{BACKEND_URL}/drone/should_takeoff', json=takeoff_query)
-                logging.debug(f'{should_takeoff} WLKWODKJOWKDOWKWKDOWDWKDOWDOKDWOKDOW')
+                logging.debug(f'{should_takeoff}')
 
             # If it fails to do so
             except Exception:
@@ -601,7 +603,7 @@ class Drone:
             if '<Response [200]>' == str(should_takeoff):
 
                 # The drone should now takeoff
-                self.send_control_command('takeoff')
+                self.send_control_command('takeoff', recv_timeout=7)
                 logging.debug(f'Completed takeoff for {self.name} at {self.parent}')
 
                 # Update the takeoff flag.
@@ -616,6 +618,7 @@ class Drone:
             # The reason for having the same while loop is because the drone
             # may become inactive. The while loop is to more quickly return if a drone is diconnected. 
             # This saves a small amount of resource.
+
             while self.drone_active and self.takeoff:
                 # Get commands from the backend endpoint: cmd_queue.
                 rc_commands: dict = requests.get(f'{BACKEND_URL}/cmd_queue', json=command_queue)
@@ -726,7 +729,7 @@ class Drone:
         self.send_control_command(f"port {self.status_port} {self.video_port}")
     
 
-    def send_control_command(self, command: str) -> bool | None:
+    def send_control_command(self, command: str, recv_timeout: int = 1) -> bool | None:
         """Send a command to the drone with reurn.
 
         Arguments:
@@ -741,6 +744,11 @@ class Drone:
             Se Tello EDU docs for more detail.
         
         """
+        try:
+            self.response_socket.settimeout(recv_timeout)
+        except Exception as error:
+            logging.error(f'Error setting timeout {recv_timeout}')
+
 
         # Try everything because the drone may disconnect without notifying us.
         try:
