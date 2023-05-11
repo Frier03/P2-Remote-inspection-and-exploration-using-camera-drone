@@ -19,7 +19,7 @@ from time import sleep, time
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
 # The URL of the backend IPv4.
-BACKEND_URL = 'http://89.150.129.29:8000/v1/api/relay'
+BACKEND_URL = 'http://00.00.00.00:8000/v1/api/relay'
 
 class Relaybox:
     """The model of a relaybox,
@@ -446,7 +446,7 @@ class Drone:
         self.parent: str = parent
         
         # The IPv4 address for the backend.
-        self.backend_IP = '89.150.129.29' # TODO: This could be an URL instead
+        self.backend_IP = '00.00.00.00' # TODO: This could be an URL instead
 
         # A UDP socket for receiving the video feed from the drone.
         self.video_socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

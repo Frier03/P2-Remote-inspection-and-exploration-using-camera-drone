@@ -26,7 +26,11 @@ routes_with_authorization: list = [ # TODO: Add all routes that is sensitive + d
     "/v1/api/frontend/protected", 
     "/v1/api/frontend/logout",
     "/v1/api/frontend/users/me",
-    #"/v1/api/relay/heartbeat", 
+    "/v1/api/frontend/relayboxes/all",
+    "/v1/api/frontend/drone/takeoff",
+    "/v1/api/frontend/drone/land",
+    "/v1/api/frontend/drone/new_command",
+    "/v1/api/relay/heartbeat", 
     "/v1/api/relay/relayboxes/all"
 ]
 
