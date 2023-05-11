@@ -3,8 +3,8 @@ from pynput import keyboard
 from time import sleep
 
 
-BACKEND_URL = 'http://89.150.129.29:8000/v1/api/frontend'
-BACKEND_IP = '89.150.129.29'
+BACKEND_URL = 'http://00.00.00.00:8000/v1/api/frontend'
+BACKEND_IP = '00.00.00.00'
 
 
 class client:
@@ -263,14 +263,14 @@ class controller:
     
 
     def handle(self):
-        # Send Verification Packet 3 times to minimize error chance
+        # Send Verification Packet 3 times to minimize error chance.
         for i in range(3):
             try:
                 self.vidsock.sendto('rts'.encode('utf-8'), self.backend_address)
             except Exception as e:
                 print(f'Could not send RTS: {e}')
 
-        self.vidsock.close() #Close the socket to allow use from FFMPEG
+        self.vidsock.close() #Close the socket to allow use from FFMPEG.
 
         #Start the Video Process
         video_thread = threading.Thread(name='video_stream', target=self.video, args=())
