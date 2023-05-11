@@ -139,6 +139,7 @@ class client:
                 if response.json().get('access_token'):
                     correct_login = True
                     self.token = response.json().get('access_token')
+                    self.header = {'Authorization': f'{self.token}'}
             
             except Exception:
                 print('Failed Connecting to Backend')
@@ -185,8 +186,11 @@ class client:
                 #-----# Pass Status Information if Connected To Drone #-----#
                 if self.connection != None:
                     #We Use copy to avoid iterating a changing list or performing simultaneous action on the same dictionary
-                    self.connection.status = copy.deepcopy(self.server_info[self.connection.relay][self.connection.drone]['status_information'])
-                
+                    #self.connection.status = copy.deepcopy(self.server_info[self.connection.relay][self.connection.drone]['status_information'])
+                    try:
+                        print("\nStatus Information: ", self.server_info[self.connection.relay][self.connection.drone]['status_information'])
+                    except:
+                        print("No Drone Connected!")
 
                 sleep(0.6)
 
@@ -219,7 +223,8 @@ class controller:
                     '-fflags', 'nobuffer',
                     '-flags', 'low_delay',
                     '-framedrop',
-                    '-strict', 'experimental']
+                    '-strict', 'experimental',
+                    '-loglevel', 'panic']
         
 
         #-----# Controller/Key Mapping Variables #-----#
@@ -259,7 +264,8 @@ class controller:
         self.pressed_keys = set()
 
         #-----# Start the Object Handler #-----#
-        self.handle()
+        handle_thread = threading.Thread(target=self.handle, args=())
+        handle_thread.start()
     
 
     def handle(self):
@@ -275,10 +281,6 @@ class controller:
         #Start the Video Process
         video_thread = threading.Thread(name='video_stream', target=self.video, args=())
         video_thread.start()
-        
-        #Start the Status Thread
-        status_thread = threading.Thread(name='status', target=self.status_information, args=())
-        status_thread.start()
 
         with keyboard.Listener(on_press=self.on_press, on_release=self.on_release) as listener:
             listener.join()
@@ -286,18 +288,7 @@ class controller:
 
     def video(self):
         print("Starting Video Process")
-        self.process = subprocess.Popen(self.ffmpeg_cmd, stdout=subprocess.PIPE)
-
-    def status_information(self):
-        '''
-        Status information handles the information regarding the specific drone.
-        The status information is colllected and passed in the Client Class under the information() function.
-
-        Output: Prints the Status
-        '''
-        while True:
-            print(f"Drone Status:\n {self.status}")
-            sleep(1)
+        self.process = subprocess.Popen(self.ffmpeg_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         
 
     def update_velocity(self, key_char, mapping):
@@ -328,10 +319,11 @@ class controller:
             print("Land: ", response.json())
             return
 
-        print("Velocity:", self.for_back_velocity, self.left_right_velocity, self.up_down_velocity, self.yaw_velocity)
+        #print(f"Velocity: [{self.for_back_velocity}, {self.left_right_velocity}, {self.up_down_velocity}, {self.yaw_velocity}]")
 
         #Send Command to Backend
-        query = {'relay_name': self.relay, 'drone_name': self.drone, 'cmd': [self.for_back_velocity, self.left_right_velocity, self.up_down_velocity, self.yaw_velocity]}
+        query = {'relay_name': self.relay, 'drone_name': self.drone, 'cmd': [self.left_right_velocity, self.for_back_velocity, self.up_down_velocity, self.yaw_velocity]}
+        print(query)
         response = requests.post(f'{BACKEND_URL}/drone/new_command', json=query, headers=self.header)
         print("CMD: ", response)
 
