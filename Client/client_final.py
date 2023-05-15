@@ -103,41 +103,8 @@ class client:
                         print('ffmpeg process killed')
                     except:
                         print('ffmpeg process was never begun...')
-                    
-                    #Tell the backend that the client has disconnected
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    sock.bind(('', 6969))
-                    sock.settimeout(2)
-
-
-                    verified = False
-                    count = 0
-
-                    # Await Backend Verification
-                    while verified == False:
-                        try:
-                            sock.sendto('end'.encode('utf-8'), (BACKEND_IP, self.video_port))
-                        except Exception as e:
-                            print(f'Could not send end message: {e}')
-
-                        try:
-                            data, backend = sock.recvfrom(2048)
-
-                        except Exception as e:
-                            count += 1
-                            print(f"Socket Error: {e} \nRetrying RTS")
-
-                        if count == 10:
-                            #If on 10th retry
-                            print("Could Not Verify With Backend")
-                            return
-
-                        if data:
-                            print("Verification Complete")
-                            verified = True
 
                     #Delete the socket and object
-                    sock.close()
                     del self.connection
                     self.connection = None
 
@@ -146,7 +113,6 @@ class client:
 
             if event == '-UPDATE_DRONES-':
                 self.window['-combo.active_drones-'].Update(values=values[event])
-
 
         self.window.close()
 
@@ -175,6 +141,7 @@ class client:
             
             except Exception:
                 print('Failed Connecting to Backend')
+                sleep(1)
         
         print(f'<{self.username}> logged on')
 
@@ -304,6 +271,7 @@ class controller:
     def handle(self):
         verified = False
         count = 0
+        data = None
 
         # Await Backend Verification
         while verified == False:

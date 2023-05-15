@@ -73,16 +73,7 @@ class DroneVideoStream:
             except Exception:
                 print('Could not retrieve message/Timeout: Socket Most Likely Closed.')
                 return
-
             
-            #If the Client Disconnects
-            if data.decode('utf-8') == 'end':
-                print("Client Disconnected!")
-                self.socket.sendto("ok".encode('utf-8'), addr)
-                self.connections.pop(addr)
-                print(self.connections)
-                return
-
             try:
                 # Send the data to the other client
                 for address in self.connections:
@@ -96,6 +87,7 @@ class DroneVideoStream:
             except Exception:
                 return
         return
+
 
     def check_conn(self) -> None:
         print("Checking Connections for Drone")
