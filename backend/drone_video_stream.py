@@ -78,6 +78,7 @@ class DroneVideoStream:
             #If the Client Disconnects
             if data.decode('utf-8') == 'end':
                 print("Client Disconnected!")
+                self.socket.sendto("ok".encode('utf-8'), addr)
                 self.connections.pop(addr)
                 print(self.connections)
                 return
