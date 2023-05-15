@@ -3,8 +3,8 @@ from pynput import keyboard
 from time import sleep
 
 
-BACKEND_URL = 'http://00.00.00.00:8000/v1/api/frontend'
-BACKEND_IP = '00.00.00.00'
+BACKEND_URL = 'http://192.168.137.101:8000/v1/api/frontend'
+BACKEND_IP = '192.168.137.101'
 
 
 class client:
@@ -26,7 +26,6 @@ class client:
         self.video_port = None
 
         self.handle()
-
 
     #-----# Main Handler #-----#
     def handle(self):
@@ -216,7 +215,7 @@ class controller:
         self.vidsock.bind(self.address)
         self.vidsock.settimeout(3)
 
-        self.ffmpeg_cmd = ['C:/Users/chris/Documents/ComputerTechnology/ffmpeg-master-latest-win64-gpl/bin/ffplay',
+        self.ffmpeg_cmd = ['C:/Users/chris/Documents/Comtek/ffmpeg-master-latest-win64-gpl/bin/ffplay',
                     '-i', f'udp://0.0.0.0:6969',
                     '-probesize', '32',
                     '-framerate', '30',
@@ -233,7 +232,7 @@ class controller:
         self.left_right_velocity = 0
         self.up_down_velocity = 0
         self.yaw_velocity = 0
-        self.vel_speed = 50
+        self.vel_speed = 80
 
         self.key_mapping = {
             'w': (1, 0, 0, 0),
