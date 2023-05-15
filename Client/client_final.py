@@ -103,9 +103,41 @@ class client:
                         print('ffmpeg process killed')
                     except:
                         print('ffmpeg process was never begun...')
+                    
+                    #Tell the backend that the client has disconnected
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    sock.bind(('', 6969))
+                    sock.settimeout(2)
+
+
+                    verified = False
+                    count = 0
+
+                    # Await Backend Verification
+                    while verified == False:
+                        try:
+                            sock.sendto('end'.encode('utf-8'), (BACKEND_IP, self.video_port))
+                        except Exception as e:
+                            print(f'Could not send end message: {e}')
+
+                        try:
+                            data, backend = sock.recvfrom(2048)
+
+                        except Exception as e:
+                            count += 1
+                            print(f"Socket Error: {e} \nRetrying RTS")
+
+                        if count == 10:
+                            #If on 10th retry
+                            print("Could Not Verify With Backend")
+                            return
+
+                        if data:
+                            print("Verification Complete")
+                            verified = True
 
                     #Delete the socket and object
-                    self.connection.vidsock.close()
+                    sock.close()
                     del self.connection
                     self.connection = None
 
@@ -215,6 +247,7 @@ class controller:
 
         self.vidsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.vidsock.bind(self.address)
+        self.vidsock.settimeout(3)
 
         self.ffmpeg_cmd = ['C:/Users/chris/Documents/ComputerTechnology/ffmpeg-master-latest-win64-gpl/bin/ffplay',
                     '-i', f'udp://0.0.0.0:6969',
@@ -269,14 +302,34 @@ class controller:
     
 
     def handle(self):
-        # Send Verification Packet 3 times to minimize error chance.
-        for i in range(3):
+        verified = False
+        count = 0
+
+        # Await Backend Verification
+        while verified == False:
             try:
                 self.vidsock.sendto('rts'.encode('utf-8'), self.backend_address)
             except Exception as e:
                 print(f'Could not send RTS: {e}')
 
-        self.vidsock.close() #Close the socket to allow use from FFMPEG.
+            try:
+                data, backend = self.vidsock.recvfrom(2048)
+
+            except Exception as e:
+                count += 1
+                print(f"Socket Error: {e} \nRetrying RTS")
+
+            if count == 10:
+                #If on 10th retry
+                print("Could Not Verify With Backend")
+                return
+
+            if data:
+                print("Verification Complete")
+                verified = True
+    
+        #Close the socket to allow use from FFMPEG.
+        self.vidsock.close()
 
         #Start the Video Process
         video_thread = threading.Thread(name='video_stream', target=self.video, args=())
