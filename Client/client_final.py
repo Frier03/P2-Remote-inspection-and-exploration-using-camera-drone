@@ -3,8 +3,8 @@ from pynput import keyboard
 from time import sleep
 
 
-BACKEND_URL = 'http://00.00.00.00:8000/v1/api/frontend'
-BACKEND_IP = '00.00.00.00'
+BACKEND_URL = 'http://192.168.137.101:8000/v1/api/frontend'
+BACKEND_IP = '192.168.137.101'
 
 
 class client:
@@ -26,7 +26,6 @@ class client:
         self.video_port = None
 
         self.handle()
-
 
     #-----# Main Handler #-----#
     def handle(self):
@@ -105,7 +104,6 @@ class client:
                         print('ffmpeg process was never begun...')
 
                     #Delete the socket and object
-                    self.connection.vidsock.close()
                     del self.connection
                     self.connection = None
 
@@ -114,7 +112,6 @@ class client:
 
             if event == '-UPDATE_DRONES-':
                 self.window['-combo.active_drones-'].Update(values=values[event])
-
 
         self.window.close()
 
@@ -139,9 +136,11 @@ class client:
                 if response.json().get('access_token'):
                     correct_login = True
                     self.token = response.json().get('access_token')
+                    self.header = {'Authorization': f'{self.token}'}
             
             except Exception:
                 print('Failed Connecting to Backend')
+                sleep(1)
         
         print(f'<{self.username}> logged on')
 
@@ -185,8 +184,11 @@ class client:
                 #-----# Pass Status Information if Connected To Drone #-----#
                 if self.connection != None:
                     #We Use copy to avoid iterating a changing list or performing simultaneous action on the same dictionary
-                    self.connection.status = copy.deepcopy(self.server_info[self.connection.relay][self.connection.drone]['status_information'])
-                
+                    #self.connection.status = copy.deepcopy(self.server_info[self.connection.relay][self.connection.drone]['status_information'])
+                    try:
+                        print("\nStatus Information: ", self.server_info[self.connection.relay][self.connection.drone]['status_information'])
+                    except:
+                        print("No Drone Connected!")
 
                 sleep(0.6)
 
@@ -211,15 +213,17 @@ class controller:
 
         self.vidsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.vidsock.bind(self.address)
+        self.vidsock.settimeout(3)
 
-        self.ffmpeg_cmd = ['C:/Users/chris/Documents/ComputerTechnology/ffmpeg-master-latest-win64-gpl/bin/ffplay',
+        self.ffmpeg_cmd = ['C:/Users/chris/Documents/Comtek/ffmpeg-master-latest-win64-gpl/bin/ffplay',
                     '-i', f'udp://0.0.0.0:6969',
                     '-probesize', '32',
                     '-framerate', '30',
                     '-fflags', 'nobuffer',
                     '-flags', 'low_delay',
                     '-framedrop',
-                    '-strict', 'experimental']
+                    '-strict', 'experimental',
+                    '-loglevel', 'panic']
         
 
         #-----# Controller/Key Mapping Variables #-----#
@@ -228,7 +232,7 @@ class controller:
         self.left_right_velocity = 0
         self.up_down_velocity = 0
         self.yaw_velocity = 0
-        self.vel_speed = 50
+        self.vel_speed = 80
 
         self.key_mapping = {
             'w': (1, 0, 0, 0),
@@ -259,26 +263,44 @@ class controller:
         self.pressed_keys = set()
 
         #-----# Start the Object Handler #-----#
-        self.handle()
+        handle_thread = threading.Thread(target=self.handle, args=())
+        handle_thread.start()
     
 
     def handle(self):
-        # Send Verification Packet 3 times to minimize error chance.
-        for i in range(3):
+        verified = False
+        count = 0
+        data = None
+
+        # Await Backend Verification
+        while verified == False:
             try:
                 self.vidsock.sendto('rts'.encode('utf-8'), self.backend_address)
             except Exception as e:
                 print(f'Could not send RTS: {e}')
 
-        self.vidsock.close() #Close the socket to allow use from FFMPEG.
+            try:
+                data, backend = self.vidsock.recvfrom(2048)
+
+            except Exception as e:
+                count += 1
+                print(f"Socket Error: {e} \nRetrying RTS")
+
+            if count == 10:
+                #If on 10th retry
+                print("Could Not Verify With Backend")
+                return
+
+            if data:
+                print("Verification Complete")
+                verified = True
+    
+        #Close the socket to allow use from FFMPEG.
+        self.vidsock.close()
 
         #Start the Video Process
         video_thread = threading.Thread(name='video_stream', target=self.video, args=())
         video_thread.start()
-        
-        #Start the Status Thread
-        status_thread = threading.Thread(name='status', target=self.status_information, args=())
-        status_thread.start()
 
         with keyboard.Listener(on_press=self.on_press, on_release=self.on_release) as listener:
             listener.join()
@@ -286,18 +308,7 @@ class controller:
 
     def video(self):
         print("Starting Video Process")
-        self.process = subprocess.Popen(self.ffmpeg_cmd, stdout=subprocess.PIPE)
-
-    def status_information(self):
-        '''
-        Status information handles the information regarding the specific drone.
-        The status information is colllected and passed in the Client Class under the information() function.
-
-        Output: Prints the Status
-        '''
-        while True:
-            print(f"Drone Status:\n {self.status}")
-            sleep(1)
+        self.process = subprocess.Popen(self.ffmpeg_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         
 
     def update_velocity(self, key_char, mapping):
@@ -328,10 +339,11 @@ class controller:
             print("Land: ", response.json())
             return
 
-        print("Velocity:", self.for_back_velocity, self.left_right_velocity, self.up_down_velocity, self.yaw_velocity)
+        #print(f"Velocity: [{self.for_back_velocity}, {self.left_right_velocity}, {self.up_down_velocity}, {self.yaw_velocity}]")
 
         #Send Command to Backend
-        query = {'relay_name': self.relay, 'drone_name': self.drone, 'cmd': [self.for_back_velocity, self.left_right_velocity, self.up_down_velocity, self.yaw_velocity]}
+        query = {'relay_name': self.relay, 'drone_name': self.drone, 'cmd': [self.left_right_velocity, self.for_back_velocity, self.up_down_velocity, self.yaw_velocity]}
+        print(query)
         response = requests.post(f'{BACKEND_URL}/drone/new_command', json=query, headers=self.header)
         print("CMD: ", response)
 

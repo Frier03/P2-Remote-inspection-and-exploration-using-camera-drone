@@ -48,8 +48,8 @@ class DroneVideoStream:
         
         self.check_conn()
 
+
     def handle_stream(self) -> None:
-        print("Entered Stream Handle")
         """Sends and receives data with the connected clients.
 
         Sends confirmation packets to each client to confirm their connection, then enters a loop
@@ -58,24 +58,26 @@ class DroneVideoStream:
         Raises:
             Exception: If the socket is closed or the client is disconnected.
         """
+
         # Send confirmation packets to both clients
         for address in self.connections:
             self.socket.sendto("hello drone".encode('utf-8'), address)
+
 
         # While both clients are connected and the stream is active
         while len(self.connections) == 2 and self.active:
             try:
                 # Receive data from one of the clients
-                data, relay = self.socket.recvfrom(2048)
+                data, addr = self.socket.recvfrom(2048)
 
             except Exception:
-                print('Could not retrieve message: Socket Most Likely Closed.')
+                print('Could not retrieve message/Timeout: Socket Most Likely Closed.')
                 return
-
+            
             try:
                 # Send the data to the other client
                 for address in self.connections:
-                    if address != relay:
+                    if address != addr:
                         try:
                             self.socket.sendto(data, address)
                         except Exception:
@@ -85,6 +87,7 @@ class DroneVideoStream:
             except Exception:
                 return
         return
+
 
     def check_conn(self) -> None:
         print("Checking Connections for Drone")
@@ -115,6 +118,7 @@ class DroneVideoStream:
 
             if self.active and len(self.connections) == 2:
                 print("Both have connected via udp")
+                self.socket.settimeout(5)
                 self.handle_stream()
 
             else:
