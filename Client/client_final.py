@@ -61,6 +61,8 @@ class client:
                 # Kill the information gathering thread
                 self.kill_trigger.set()
 
+                self.logout()
+                
                 #Kill the drone connection if on
                 if self.connection:
                     self.connection.vidsock.close()
