@@ -144,6 +144,10 @@ class client:
         
         print(f'<{self.username}> logged on')
 
+    def logout(self):
+        response = requests.post(f'{BACKEND_URL}/logout', headers=self.header)
+        print(f"{response.json()}")
+
 
     def information(self):
 
