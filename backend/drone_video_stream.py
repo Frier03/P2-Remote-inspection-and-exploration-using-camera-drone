@@ -65,7 +65,7 @@ class DroneVideoStream:
 
 
         # While both clients are connected and the stream is active
-        while len(self.connections) == 2 and self.active:
+        while self.active:
             try:
                 # Receive data from one of the clients
                 data, addr = self.socket.recvfrom(2048)
@@ -81,9 +81,7 @@ class DroneVideoStream:
                         try:
                             self.socket.sendto(data, address)
                         except Exception:
-                            print("Could not send data to client. Client most likely disconnected.")
-                            self.connections.remove(address)
-
+                            print("Could not send data to client.")
             except Exception:
                 return
         return
@@ -118,7 +116,7 @@ class DroneVideoStream:
 
             if self.active and len(self.connections) == 2:
                 print("Both have connected via udp")
-                self.socket.settimeout(5)
+                self.socket.settimeout(8)
                 self.handle_stream()
 
             else:

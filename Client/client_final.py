@@ -61,6 +61,8 @@ class client:
                 # Kill the information gathering thread
                 self.kill_trigger.set()
 
+                self.logout()
+                
                 #Kill the drone connection if on
                 if self.connection:
                     self.connection.vidsock.close()
@@ -143,6 +145,10 @@ class client:
                 sleep(1)
         
         print(f'<{self.username}> logged on')
+
+    def logout(self):
+        response = requests.post(f'{BACKEND_URL}/logout', headers=self.header)
+        print(f"{response.json()}")
 
 
     def information(self):
