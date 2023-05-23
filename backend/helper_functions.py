@@ -25,12 +25,17 @@ from passlib.context import CryptContext
 
 # JWT encryption key
 from os import getenv
+from dotenv import load_dotenv
 
 # Own Pydantic Token
 from models import TokenModel
 
-
+load_dotenv()
 SECRET_KEY: str = str(getenv('SECRET_KEY'))
+
+if SECRET_KEY == "None":
+    raise ValueError("No 'SECRET_KEY' found in dotenv")
+
 pwd_context: CryptContext = CryptContext(schemes=["bcrypt_sha256"])
 
 def generate_access_token(data: dict[str, any], minutes: int) -> TokenModel:
