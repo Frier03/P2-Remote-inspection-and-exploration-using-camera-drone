@@ -1,4 +1,4 @@
-# Remote Inspection and Exploration using Camera Drone
+# Remote Inspection and Exploration using Camera Drone (Grade: B+)
 This project aims to develop a system for remote inspection and exploration using camera drones. The system will allow users to control the drone remotely and view live footage from the drone's camera in real-time.
 
 ### Getting Started
